@@ -6,19 +6,29 @@ class TriggerZone extends hz.Component<typeof TriggerZone> {
         musicPlayer: { type: hz.PropTypes.Entity },
     };
 
-    private inputTrackId = "";
+    // !!FIXME!! setter not actively changing incomingTrackId variable !!FIXME!!
+    private incomingTrackId: number = 0;
 
-    preStart() {
-        this.connectNetworkEvent(this.entity!, trackIdEvent, (data: { trackId: string }) => {
-            console.log('Received trackIdEvent:', data.trackId);
-            this.inputTrackId = data.trackId;
-        });
+    private setTrackId(trackId: number): void {
+        this.incomingTrackId = trackId;
     }
 
-    start() {
+    public getTrackId(): number {
+        return this.incomingTrackId;
+    }
+
+    preStart() {
+        this.connectLocalBroadcastEvent(trackIdEvent, (trackInfo) => {
+            console.log('Received trackIdEvent: ' + trackInfo.trackId);
+            this.setTrackId(trackInfo.trackId);
+        })
+    }
+
+    override start() {
         if (hz.CodeBlockEvents.OnEntityEnterTrigger) {
-            //const trackId = "trackId1"
-            this.sendLocalEvent(this.props.musicPlayer!, playSongEvent, { trackId: this.inputTrackId });
+            this.sendNetworkEvent(this.props.musicPlayer!, playSongEvent, { trackId: this.incomingTrackId});
         }
     }
 }
+
+hz.Component.register(TriggerZone);
