@@ -5,6 +5,7 @@ import { playSongEvent, } from './shared-events';
 type TrackId = number;
 class MusicPlayer extends hz.Component<typeof MusicPlayer> {
     static propsDefinition = {
+        recordTrigger: { type: hz.PropTypes.Entity},
         song1: { type: hz.PropTypes.Entity },
         song2: { type: hz.PropTypes.Entity },
     };
@@ -21,10 +22,14 @@ class MusicPlayer extends hz.Component<typeof MusicPlayer> {
     }
 
     preStart() {
-        this.connectNetworkEvent(this.entity, playSongEvent, (incomingTrackInfo) => {
-            console.log('Received playSongEvent song: ', incomingTrackInfo.trackId);
-            this.playSong(incomingTrackInfo.trackId);
-        });
+        this.connectLocalEvent(
+            this.props.recordTrigger!,
+            playSongEvent,
+            (incomingTrackInfo) => {
+                console.log('Received playSongEvent song: ', incomingTrackInfo.trackId);
+                this.playSong(incomingTrackInfo.trackId);
+            }
+        );
     }
 
     start() {
