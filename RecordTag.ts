@@ -7,16 +7,11 @@ class RecordTag extends hz.Component<typeof RecordTag> {
     };
     
     preStart() {
+        
     }
 
-    start() {
-        this.connectCodeBlockEvent(
-            this.entity,
-            hz.CodeBlockEvents.OnEntityEnterTrigger,
-            (entity: hz.Entity) => {
-                this.sendLocalBroadcastEvent(trackIdEvent, { trackId: this.props.trackId });
-            }
-        );
+    override start() {
+        this.sendLocalBroadcastEvent(trackIdEvent, { trackId: this.props.trackId });
     }
 }
 hz.Component.register(RecordTag);
