@@ -1,3 +1,8 @@
+// add:
+// import { DebugUtils } from './DebugUtils';
+// to other file in same directory to use
+
+// reads and prints all component details
 export function serializeComponent(component: any): string {
     const seen = new WeakSet();
     return JSON.stringify(component, (key, value) => {
