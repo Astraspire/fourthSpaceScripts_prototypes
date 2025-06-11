@@ -1,6 +1,6 @@
-// add:
+// add following line:
 // import { DebugUtils } from './DebugUtils';
-// to other file in same directory to use
+// to another file in same directory to use
 
 // reads and prints all component details
 export function serializeComponent(component: any): string {
