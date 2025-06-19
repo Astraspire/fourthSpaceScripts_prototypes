@@ -6,18 +6,14 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     static propsDefinition = {
         loopSectionId: { type: hz.PropTypes.Number },
         channelId: { type: hz.PropTypes.Number },
+        channelStopButton: { type: hz.PropTypes.Entity },
     };
 
-    private startLoopPress(): void {
-        console.log(`startLoopPress for loop ${this.props.loopSectionId} 
-        on channel ${this.props.channelId} not implemented yet`);
-
-        // sends loopTriggerEvent with channelId and loopSectionId as data
-        this.sendLocalBroadcastEvent(loopTriggerEvent, {
+    private startLoopPress = (): void => {
+        this.sendLocalEvent(this.props.channelStopButton!, loopTriggerEvent, ({
             channelId: this.props.channelId,
             loopSectionId: this.props.loopSectionId
-        })
-
+        }));  
     }
 
     preStart() {
@@ -30,7 +26,6 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     }
 
     start() {
-
     }
 }
 hz.Component.register(LoopButtonTrigger);
