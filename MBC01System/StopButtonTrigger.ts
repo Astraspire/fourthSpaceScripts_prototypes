@@ -1,5 +1,7 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent } from './shared-events';
+// import { loopTriggerEvent } from './shared-events';
+
+// !!saved for parts!!
 
 class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
     static propsDefinition = {
@@ -73,10 +75,10 @@ class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
     }
 
     preStart() {
-        // listens for loopTriggerEvent from Loop Trigger Buttons
-        this.connectLocalBroadcastEvent(loopTriggerEvent, (loopData) => {
-            this.playLoop(loopData.channelId, loopData.loopSectionId);
-        });
+        //// listens for loopTriggerEvent from Loop Trigger Buttons
+        //this.connectLocalBroadcastEvent(loopTriggerEvent, (loopData) => {
+        //    this.playLoop(loopData.channelId, loopData.loopSectionId);
+        //});
 
         // listen for player collision
         this.connectCodeBlockEvent(
