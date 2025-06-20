@@ -5,7 +5,6 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     static propsDefinition = {
         loopSectionId: { type: hz.PropTypes.Number },
         channelId: { type: hz.PropTypes.Number },
-        channelStopButton: { type: hz.PropTypes.Entity },
     };
 
     private startLoopPress = (): void => {
@@ -19,7 +18,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         // listen for player collision
         this.connectCodeBlockEvent(
             this.entity,
-            hz.CodeBlockEvents.OnPlayerCollision,
+            hz.CodeBlockEvents.OnPlayerExitTrigger,
             this.startLoopPress
         );
     }

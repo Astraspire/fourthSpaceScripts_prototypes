@@ -19,22 +19,27 @@ class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
     private nextAllowed = 0;
     // 15 s in ms
     private static readonly BUFFER = 15_000;
+    // holds data on current outputted loop audio
     private currentPlayingLoopId: number = 0;
-    private numOfLoops: number = 0;
 
     private playLoop(channelId: number, loopSectionId: number): void {
         console.log(`Channel playLoop method not implemented yet`);
 
         // checks for live sample on channel already
         if (this.channelLive) {
+
             // checks to see if trigger is for the selected channel
             if (channelId == this.props.channelId) {
+
                 // checks to see if new loop on same channel
                 if (loopSectionId != this.currentPlayingLoopId) {
+                    console.log(`${loopSectionId} is set to play next...`);
                     // stops currently playing loop
                     this.sendStop();
+                    console.log(`${this.currentPlayingLoopId} is stopping...`);
                     // play triggered loop
                     this.channelLoops[loopSectionId]?.play();
+                    console.log(`${loopSectionId} is should be playing now!`);
                     // sets current loop playing to incoming loopSectionId
                     this.currentPlayingLoopId = loopSectionId;
                 } else {
@@ -47,12 +52,13 @@ class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
 
             // sets current loop playing to incoming loopSectionId
             this.currentPlayingLoopId = loopSectionId;
-
+            console.log(`${loopSectionId} is set to play next...`);
             // play triggered loop
             this.channelLoops[loopSectionId]?.play(); 
-
+            console.log(`${loopSectionId} is should be playing now!`);
             // sets channel as playing
             this.channelLive = true;
+            console.log(`${channelId} is now live!`)
         }        
     }
 
@@ -75,7 +81,7 @@ class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
         // listen for player collision
         this.connectCodeBlockEvent(
             this.entity,
-            hz.CodeBlockEvents.OnPlayerCollision,
+            hz.CodeBlockEvents.OnPlayerExitTrigger,
             this.sendStop,
         );
     }
