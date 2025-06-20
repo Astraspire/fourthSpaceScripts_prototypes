@@ -1,6 +1,5 @@
 import * as hz from 'horizon/core';
 import { loopTriggerEvent } from './shared-events';
-import { serializeComponent } from './DebugUtils';
 
 class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     static propsDefinition = {
@@ -10,7 +9,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     };
 
     private startLoopPress = (): void => {
-        this.sendLocalEvent(this.props.channelStopButton!, loopTriggerEvent, ({
+        this.sendLocalBroadcastEvent(loopTriggerEvent, ({
             channelId: this.props.channelId,
             loopSectionId: this.props.loopSectionId
         }));  
