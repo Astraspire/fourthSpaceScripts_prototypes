@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent } from './shared-events';
+import { loopTriggerEvent, stopRowEvent } from './shared-events';
 
 class SongManager extends hz.Component<typeof SongManager> {
     static propsDefinition = {
@@ -31,7 +31,7 @@ class SongManager extends hz.Component<typeof SongManager> {
     };
 
     // number of channels on MBC-25 controller
-    private static readonly NUM_CHANNELS: number = 5;
+    private static readonly NUM_LOOPS: number = 5;
     // cross-fade time in seconds
     private static readonly FADE_TIME = 2.0;
 
@@ -42,6 +42,9 @@ class SongManager extends hz.Component<typeof SongManager> {
 
     // Map of channels
     private channelLoops: hz.AudioGizmo[][] = [];
+
+    // map of channel IDs -> currently active AudioGizmo on that channel
+    private activeLoops: Record<number, hz.AudioGizmo> = {};
 
     // map of currently playing loops
     private currentLoopIndex!: number[][];
@@ -54,73 +57,51 @@ class SongManager extends hz.Component<typeof SongManager> {
     // decides loop duration based on properties set
     private loopDurationSec = (60 / SongManager.SONG_BPM) * SongManager.BEATS_PER_LOOP; 
 
-    private onGlobalLoopCycle = (incomingChannelId: number, incomingLoopId: number): void => {
+    private stopChannel = (channelId: number) => {
+        console.log(`Channel ${channelId} triggered to stop.`)
 
-        // If there is no currentLoopId, this sets it to the incoming
-        console.log(`Received trigger event from channel:${incomingChannelId}, loop: ${incomingLoopId}.`)
-
-        if (this.currentLoopId == -1)  {
-            this.currentLoopId = incomingLoopId;
-        }
-
-        // checks for valid incoming channel and if loop exists and if incoming loop is not currently playing
-        if ((0 <= incomingChannelId) && (incomingChannelId < 6)
-            && (this.currentLoopId !== incomingLoopId)) {
-            if (this.currentLoopId != null) {
-                // declares old loop to stop later
-                const oldLoop = this.currentLoopIndex[incomingChannelId][this.currentLoopId];
-
-                // queues a new loop state for the channel
-                const newLoop = this.queuedLoopIndex[incomingChannelId][incomingLoopId];
-
-                // assigns for playback
-                const newAudio = this.channelLoops[incomingChannelId][incomingLoopId];
-
-                // Start the new loop on the downbeat if loop exists
-                newAudio?.play();
-
-                // An old loop was playing, stop it with a fade-out
-                const oldAudio = this.channelLoops[incomingChannelId][oldLoop];
-                oldAudio?.stop({ fade: SongManager.FADE_TIME });
-
-                // update current playing loopId state
-                this.currentLoopId = incomingLoopId;
-
-            } else {
-                // queues a new loop state for the channel
-                const newLoop = this.queuedLoopIndex[incomingChannelId][incomingLoopId];
-
-                // assigns for playback
-                const newAudio = this.channelLoops[incomingChannelId][incomingLoopId];
-
-                // Start the new loop on the downbeat if loop exists
-                newAudio?.play();
-
-                // update current playing loopId state
-                this.currentLoopId = incomingLoopId;
-
-            }
-        } else if (incomingLoopId != null) {
-
-            // queues a new loop state for the channel
-            const newLoop = this.queuedLoopIndex[incomingChannelId][incomingLoopId];
-
-            // casts audio gizmo and assigns for playback
-            const newAudio = this.channelLoops[incomingChannelId][incomingLoopId];
-
-            newAudio?.play();
-
-            // update current playing loopId state
-            this.currentLoopId = incomingLoopId;
-
-        } else {
-            return; // skip, invalid selection
+        // stops and removes channel from activeLoops list
+        const oldLoop = this.activeLoops[channelId];
+        if (oldLoop) {
+            oldLoop.stop();
+            delete this.activeLoops[channelId];
         }
     }
 
-    preStart() {
-        this.currentLoopIndex = Array.from({ length: 5 }, () => new Array(5).fill(0));
-        this.queuedLoopIndex = Array.from({ length: 5 }, () => new Array(5).fill(0));
+    override preStart() {
+
+        // Listen for loopTriggerEvent
+        this.connectLocalBroadcastEvent(
+            loopTriggerEvent, (loopData) => {
+                console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
+
+                // Stop any old loop on that channel
+                const oldLoop = this.activeLoops[loopData.channelId];
+                if (oldLoop) {
+                    oldLoop.stop({ fade: SongManager.FADE_TIME});
+                }
+                // assigns for playback
+                const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
+
+                // Start the new loop on the downbeat if loop exists
+                newAudio?.play();
+
+                // Track it in our map
+                this.activeLoops[loopData.channelId] = newAudio;
+            }
+        );
+
+        // Listen for stopRowEvent
+        this.connectLocalBroadcastEvent(
+            stopRowEvent, (channelData) => {
+                this.stopChannel(channelData.channelId);
+            }
+        );
+
+    }
+
+    override start() {
+        const interval = this.loopDurationSec * 1000; // converts to ms
 
         // maps all audio gizmos to the channel grid
         this.channelLoops = [
@@ -131,18 +112,13 @@ class SongManager extends hz.Component<typeof SongManager> {
             [this.props.chan5Loop1!.as(hz.AudioGizmo), this.props.chan3Loop2!.as(hz.AudioGizmo), this.props.chan5Loop3!.as(hz.AudioGizmo), this.props.chan5Loop4!.as(hz.AudioGizmo), this.props.chan5Loop5!.as(hz.AudioGizmo)],
         ];
 
-        // listens for loopTriggerEvent from Loop Trigger Buttons
-        this.connectLocalBroadcastEvent(loopTriggerEvent, (loopData) => {
-            this.onGlobalLoopCycle(loopData.channelId, loopData.loopSectionId);
-        });
-
+        // Every interval ms, replay every active loop so they stay in lock-step
+        this.async.setInterval(() => {
+            for (const loopGizmo of Object.values(this.activeLoops)) {
+                loopGizmo.play();
+            }
+        }, interval);
     }
 
-    start() {
-        //this.async.setInterval(() => {
-        //this.onGlobalLoopCycle(); // custom method to handle the cycle event
-        //}, this.loopDurationSec * 1000);
-
-    }
 }
 hz.Component.register(SongManager);
