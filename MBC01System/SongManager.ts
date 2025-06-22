@@ -46,13 +46,6 @@ class SongManager extends hz.Component<typeof SongManager> {
     // map of channel IDs -> currently active AudioGizmo on that channel
     private activeLoops: Record<number, hz.AudioGizmo> = {};
 
-    // map of currently playing loops
-    private currentLoopIndex!: number[][];
-
-    // sets incoming loop index number
-    private queuedLoopIndex!: number[][];
-
-    private currentLoopId: number = -1;
 
     // decides loop duration based on properties set
     private loopDurationSec = (60 / SongManager.SONG_BPM) * SongManager.BEATS_PER_LOOP; 
@@ -83,10 +76,7 @@ class SongManager extends hz.Component<typeof SongManager> {
                 // assigns for playback
                 const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
 
-                // Start the new loop on the downbeat if loop exists
-                newAudio?.play();
-
-                // Track it in our map
+                // Track it in our active playing map
                 this.activeLoops[loopData.channelId] = newAudio;
             }
         );
