@@ -61,8 +61,8 @@ class SongManager extends hz.Component<typeof SongManager> {
         // Defines beatsPerLoop for script
         this.beatsPerLoop = this.props.beatsPerLoop!;
 
-        // decides loop duration based on properties set
-        this.loopDurationSec = (60 / this.songBPM) * this.beatsPerLoop;
+        // decides loop duration based on properties set - forced loop duration to floating number to prevent rounding errors in the future (due to trunctation)
+        this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
 
         // Listen for loopTriggerEvent
         this.connectLocalBroadcastEvent(
@@ -90,12 +90,11 @@ class SongManager extends hz.Component<typeof SongManager> {
 
             }
         );
-
     }
 
     override start() {
 
-        const interval = this.loopDurationSec * 1000; // converts to ms
+        const interval = (this.loopDurationSec) * 1000; // converts to ms
 
         // Every interval ms, replay every active loop so they stay in lock-step
         this.async.setInterval(() => {
