@@ -1,8 +1,5 @@
 import * as hz from 'horizon/core';
 import { stopRowEvent } from './shared-events';
-// import { loopTriggerEvent } from './shared-events';
-
-// !!saved for parts!!
 
 class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
     static propsDefinition = {
@@ -11,7 +8,7 @@ class StopButtonTrigger extends hz.Component<typeof StopButtonTrigger> {
 
     private sendStop = (): void => {
         this.sendLocalBroadcastEvent(stopRowEvent, ({
-            channelId: this.props.channelId,
+            channelId: this.props.channelId
         }));
     }
 

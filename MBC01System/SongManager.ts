@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent, stopRowEvent } from './shared-events';
+import { loopTriggerEvent, offlineColorChangeEvent, playingColorChangeEvent, stopRowEvent } from './shared-events';
 
 class SongManager extends hz.Component<typeof SongManager> {
     static propsDefinition = {
@@ -38,7 +38,9 @@ class SongManager extends hz.Component<typeof SongManager> {
     private songBPM!: number;
     private beatsPerLoop!: number;
     private channelLoops!: hz.AudioGizmo[][];
-    private activeLoops: Record<number, hz.AudioGizmo> = {};
+    private activeLoops: Record<number,
+        { loopSectionId: number; gizmo: hz.AudioGizmo }
+    > = {};
     private loopDurationSec!: number;
 
 
@@ -72,6 +74,10 @@ class SongManager extends hz.Component<typeof SongManager> {
                 // Stop any old loop on that channel
                 const oldLoop = this.activeLoops[loopData.channelId];
                 if (oldLoop) {
+                    this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
+                        channel: loopData.channelId,
+                        loopId: loopData.loopSectionId
+                    });
                     this.removeLoop(loopData.channelId);
                 }
 
@@ -79,7 +85,10 @@ class SongManager extends hz.Component<typeof SongManager> {
                 const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
 
                 // Track it in our active playing map
-                this.activeLoops[loopData.channelId] = newAudio;
+                this.activeLoops[loopData.channelId] = {
+                    loopSectionId: loopData.loopSectionId,
+                    gizmo: newAudio
+                };
             }
         );
 
@@ -99,7 +108,7 @@ class SongManager extends hz.Component<typeof SongManager> {
         // Every interval ms, replay every active loop so they stay in lock-step
         this.async.setInterval(() => {
             for (const loopGizmo of Object.values(this.activeLoops)) {
-                loopGizmo.play();
+                loopGizmo.gizmo.play();
             }
         }, interval);
     }
@@ -107,26 +116,38 @@ class SongManager extends hz.Component<typeof SongManager> {
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
 
-        // stops and removes channel from activeLoops list
+        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-        if (oldLoop) {
- 
-            delete this.activeLoops[channelId];
-        }
+
+        // if none, do nothing
+        if (!oldLoop) return;
+
+        delete this.activeLoops[channelId];
     }
 
+    // stops entire channel, checks for playing loop  --> any older playing loops set to default color
     private stopChannel = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
 
-        // stops and removes channel from activeLoops list
+       // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-        if (oldLoop) {
-            // removes loop from active loops
-            delete this.activeLoops[channelId];
 
-            // stops and fades out playing loop on channel
-            oldLoop.stop({ fade: this.fadeTime });
-        }
+        // if none, do nothing
+        if (!oldLoop) return;
+
+        // stops and fades out playing loop on channel
+        oldLoop.gizmo.stop({ fade: this.fadeTime });
+
+
+        // send LocalEvent to set color back to default
+        this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
+            channel: channelId,
+            loopId: oldLoop.loopSectionId
+        });
+
+        // removes loop from active loops
+        delete this.activeLoops[channelId];
+        
     }
 }
 hz.Component.register(SongManager);
