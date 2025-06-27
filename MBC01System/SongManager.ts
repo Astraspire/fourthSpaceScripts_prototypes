@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent, offlineColorChangeEvent, playingColorChangeEvent, stopRowEvent } from './shared-events';
+import { loopTriggerEvent, offlineColorChangeEvent, playingColorChangeEvent, stopRowEvent, upcomingLoopColorChangedEvent } from './shared-events';
 
 class SongManager extends hz.Component<typeof SongManager> {
     static propsDefinition = {
@@ -39,79 +39,12 @@ class SongManager extends hz.Component<typeof SongManager> {
     private beatsPerLoop!: number;
     private channelLoops!: hz.AudioGizmo[][];
     private activeLoops: Record<number,
-        { loopSectionId: number; gizmo: hz.AudioGizmo }
+        {   channelId: number;
+            loopSectionId: number;
+            gizmo: hz.AudioGizmo
+        }
     > = {};
     private loopDurationSec!: number;
-
-
-    override preStart() {
-        // maps all audio gizmos to the channel grid
-        this.channelLoops = [
-            [this.props.chan1Loop1!.as(hz.AudioGizmo), this.props.chan1Loop2!.as(hz.AudioGizmo), this.props.chan1Loop3!.as(hz.AudioGizmo), this.props.chan1Loop4!.as(hz.AudioGizmo), this.props.chan1Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan2Loop1!.as(hz.AudioGizmo), this.props.chan2Loop2!.as(hz.AudioGizmo), this.props.chan2Loop3!.as(hz.AudioGizmo), this.props.chan2Loop4!.as(hz.AudioGizmo), this.props.chan2Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan3Loop1!.as(hz.AudioGizmo), this.props.chan3Loop2!.as(hz.AudioGizmo), this.props.chan3Loop3!.as(hz.AudioGizmo), this.props.chan3Loop4!.as(hz.AudioGizmo), this.props.chan3Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan4Loop1!.as(hz.AudioGizmo), this.props.chan4Loop2!.as(hz.AudioGizmo), this.props.chan4Loop3!.as(hz.AudioGizmo), this.props.chan4Loop4!.as(hz.AudioGizmo), this.props.chan4Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan5Loop1!.as(hz.AudioGizmo), this.props.chan5Loop2!.as(hz.AudioGizmo), this.props.chan5Loop3!.as(hz.AudioGizmo), this.props.chan5Loop4!.as(hz.AudioGizmo), this.props.chan5Loop5!.as(hz.AudioGizmo)],
-        ];
-
-        // cross-fade time in seconds
-        this.fadeTime = this.props.customFadeTime!;
-
-        // Defines song BPM for script
-        this.songBPM = this.props.customBPM!;
-
-        // Defines beatsPerLoop for script
-        this.beatsPerLoop = this.props.beatsPerLoop!;
-
-        // decides loop duration based on properties set - forced loop duration to floating number to prevent rounding errors in the future (due to trunctation)
-        this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
-
-        // Listen for loopTriggerEvent
-        this.connectLocalBroadcastEvent(
-            loopTriggerEvent, (loopData) => {
-                console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
-               
-                // Stop any old loop on that channel
-                const oldLoop = this.activeLoops[loopData.channelId];
-                if (oldLoop) {
-                    this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
-                        channel: loopData.channelId,
-                        loopId: loopData.loopSectionId
-                    });
-                    this.removeLoop(loopData.channelId);
-                }
-
-                // assigns for playback
-                const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
-
-                // Track it in our active playing map
-                this.activeLoops[loopData.channelId] = {
-                    loopSectionId: loopData.loopSectionId,
-                    gizmo: newAudio
-                };
-            }
-        );
-
-        // Listen for stopRowEvent / stops channel
-        this.connectLocalBroadcastEvent(
-            stopRowEvent, (channelData) => {
-                this.stopChannel(channelData.channelId);
-
-            }
-        );
-    }
-
-    override start() {
-
-        const interval = (this.loopDurationSec) * 1000; // converts to ms
-
-        // Every interval ms, replay every active loop so they stay in lock-step
-        this.async.setInterval(() => {
-            for (const loopGizmo of Object.values(this.activeLoops)) {
-                loopGizmo.gizmo.play();
-            }
-        }, interval);
-    }
 
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
@@ -148,6 +81,95 @@ class SongManager extends hz.Component<typeof SongManager> {
         // removes loop from active loops
         delete this.activeLoops[channelId];
         
+    }
+
+    override preStart() {
+        // maps all audio gizmos to the channel grid
+        this.channelLoops = [
+            [this.props.chan1Loop1!.as(hz.AudioGizmo), this.props.chan1Loop2!.as(hz.AudioGizmo), this.props.chan1Loop3!.as(hz.AudioGizmo), this.props.chan1Loop4!.as(hz.AudioGizmo), this.props.chan1Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan2Loop1!.as(hz.AudioGizmo), this.props.chan2Loop2!.as(hz.AudioGizmo), this.props.chan2Loop3!.as(hz.AudioGizmo), this.props.chan2Loop4!.as(hz.AudioGizmo), this.props.chan2Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan3Loop1!.as(hz.AudioGizmo), this.props.chan3Loop2!.as(hz.AudioGizmo), this.props.chan3Loop3!.as(hz.AudioGizmo), this.props.chan3Loop4!.as(hz.AudioGizmo), this.props.chan3Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan4Loop1!.as(hz.AudioGizmo), this.props.chan4Loop2!.as(hz.AudioGizmo), this.props.chan4Loop3!.as(hz.AudioGizmo), this.props.chan4Loop4!.as(hz.AudioGizmo), this.props.chan4Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan5Loop1!.as(hz.AudioGizmo), this.props.chan5Loop2!.as(hz.AudioGizmo), this.props.chan5Loop3!.as(hz.AudioGizmo), this.props.chan5Loop4!.as(hz.AudioGizmo), this.props.chan5Loop5!.as(hz.AudioGizmo)],
+        ];
+
+        // cross-fade time in seconds
+        this.fadeTime = this.props.customFadeTime!;
+
+        // Defines song BPM for script
+        this.songBPM = this.props.customBPM!;
+
+        // Defines beatsPerLoop for script
+        this.beatsPerLoop = this.props.beatsPerLoop!;
+
+        // decides loop duration based on properties set - forced loop duration to floating number to prevent rounding errors in the future (due to trunctation)
+        this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
+
+        // Listen for loopTriggerEvent
+        this.connectLocalBroadcastEvent(
+            loopTriggerEvent, (loopData) => {
+                console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
+
+                // Stop any old loop on that channel
+                const oldLoop = this.activeLoops[loopData.channelId];
+                for (const chanKey in this.activeLoops) {
+                    const oldLoopId = this.activeLoops[chanKey]
+                    const thisChan = Number(chanKey)
+                    const { gizmo } = oldLoopId
+
+                    if (thisChan === loopData.channelId) {
+                        this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
+                            channel: loopData.channelId,
+                            loopId: thisChan
+                        });
+                    }
+                }
+
+                this.removeLoop(loopData.channelId);
+
+                // sets new upcoming loop to upcoming playing color
+                this.sendLocalBroadcastEvent(upcomingLoopColorChangedEvent, {
+                    channel: loopData.channelId,
+                    loopId: loopData.loopSectionId
+                });
+
+                // assigns for playback
+                const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
+
+                // Track it in our active playing map
+                this.activeLoops[loopData.channelId] = {
+                    channelId: loopData.channelId,
+                    loopSectionId: loopData.loopSectionId,
+                    gizmo: newAudio
+                };
+
+            });
+
+        // Listen for stopRowEvent / stops channel
+        this.connectLocalBroadcastEvent(
+            stopRowEvent, (channelData) => {
+                this.stopChannel(channelData.channelId);
+
+            }
+        );
+    }
+
+    override start() {
+
+        const interval = (this.loopDurationSec) * 1000; // converts to ms
+
+        // Every interval ms, replay every active loop so they stay in lock-step
+        this.async.setInterval(() => {
+            for (const loopGizmo of Object.values(this.activeLoops)) {
+
+                // sends color change to now playing color
+                this.sendLocalBroadcastEvent(playingColorChangeEvent, {
+                    channel: loopGizmo.channelId,
+                    loopId: loopGizmo.loopSectionId
+                });
+                loopGizmo.gizmo.play();
+            }
+        }, interval);
     }
 }
 hz.Component.register(SongManager);

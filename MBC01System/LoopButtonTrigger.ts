@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent, offlineColorChangeEvent, playingColorChangeEvent } from './shared-events';
+import { loopTriggerEvent, offlineColorChangeEvent, playingColorChangeEvent, upcomingLoopColorChangedEvent } from './shared-events';
 
 class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     static propsDefinition = {
@@ -7,7 +7,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         channelId: { type: hz.PropTypes.Number },
         upcomingPlaybackColor: { type: hz.PropTypes.Color, default: new hz.Color(0, 0, 1) },
         playbackColor: { type: hz.PropTypes.Color, default: new hz.Color(0, 1, 0) },
-        originalButtonColor: { type: hz.PropTypes.Color, default: new hz.Color(1.0, 1.0, 1.0) },
+        originalButtonColor: { type: hz.PropTypes.Color, default: new hz.Color(1.0, 0.5, 0.0) },
         loopButton: { type: hz.PropTypes.Entity }
     };
 
@@ -21,7 +21,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
 
     // turns button to originalButtonColor
     private buttonOffline = (): void => {
-        console.log(`Trying to change to color: ${this.props.originalButtonColor}`);
+        console.log(`Trying to change to original color: ${this.props.originalButtonColor}`);
 
         // casts button as MeshEntity to access the style properties
         const thisMesh = this.props.loopButton!.as(hz.MeshEntity);
@@ -33,7 +33,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
 
     // turns button to upcomingPlaybackColor
     private buttonPrimedForPlayback = (): void => {
-        console.log(`Trying to change to color: ${this.props.upcomingPlaybackColor}`);
+        console.log(`Trying to change to upcoming playback color: ${this.props.upcomingPlaybackColor}`);
 
         // casts button as MeshEntity to access the style properties
         const thisMesh = this.props.loopButton!.as(hz.MeshEntity);
@@ -45,7 +45,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
 
     // turns button to playbackColor
     private buttonOnline = (): void => {
-        console.log(`Trying to change to color: ${this.props.playbackColor}`);
+        console.log(`Trying to change to now playing color: ${this.props.playbackColor}`);
 
         // casts button as MeshEntity to access the style properties
         const thisMesh = this.props.loopButton!.as(hz.MeshEntity);
@@ -56,6 +56,42 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     }
 
     preStart() {
+        // listen to offlineColorChangeEvent if button if correct match
+        this.connectLocalBroadcastEvent(offlineColorChangeEvent, (loopData) => {
+            // checks for channelId match
+            if (loopData.channel == this.props.channelId) {
+                // checks for loopId match
+                if (loopData.loopId == this.props.loopSectionId) {
+                    // sets this loop button color to default
+                    this.buttonOffline();
+                }
+            }
+        });
+
+        // listen to playingColorChangeEvent if button is correct match
+        this.connectLocalBroadcastEvent(playingColorChangeEvent, (loopData) => {
+            // checks for channelId match
+            if (loopData.channel == this.props.channelId) {
+                // checks for loopId match
+                if (loopData.loopId == this.props.loopSectionId) {
+                    // sets this loop button color to playbackColor
+                    this.buttonOnline();
+                }
+            }
+        });
+
+        // listen to upcomingLoopColorChangedEvent if button is correct match
+        this.connectLocalBroadcastEvent(upcomingLoopColorChangedEvent, (loopData) => {
+            // checks for channelId match
+            if (loopData.channel == this.props.channelId) {
+                // checks for loopId match
+                if (loopData.loopId == this.props.loopSectionId) {
+                    // sets this loop button color to upcomingPaybackColor
+                    this.buttonPrimedForPlayback();
+                }
+            }
+        });
+
         // listen to turn button blue
         this.connectCodeBlockEvent(
             this.entity,
@@ -63,41 +99,18 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
             (this.buttonPrimedForPlayback)
         );
 
-        // listen to trigger loop
+        // listen to trigger loop press codeblock event
         this.connectCodeBlockEvent(
             this.entity,
             hz.CodeBlockEvents.OnPlayerExitTrigger,
-            (this.startLoopPress) 
+            (this.startLoopPress)
         );
-
-        // listen to offlineColorChangeEvent if button if correct
-        this.connectLocalBroadcastEvent(offlineColorChangeEvent, (loopData) => {
-            // checks for channelId match
-            if (loopData.channel == this.props.channelId) {
-                // checks for loopId match
-                if (loopData.loopId == this.props.loopSectionId) {
-                    // sets this loop button color to default
-                    (this.buttonOffline);
-                }
-            }
-        });
-
-        // listen to playingColorChangeEvent if button is correct
-        this.connectLocalBroadcastEvent(playingColorChangeEvent, (loopData) => {
-            // checks for channelId match
-            if (loopData.channel == this.props.channelId) {
-                // checks for loopId match
-                if (loopData.loopId == this.props.loopSectionId) {
-                    // sets this loop button color to playbackColor
-                    (this.buttonOnline);
-                }
-            }
-        });
     }
 
     start() {
-        // sets color to default
-        this.buttonOffline; 
+        // sets color to default at start
+        this.buttonOffline(); 
+
     }
 }
 hz.Component.register(LoopButtonTrigger);

@@ -14,3 +14,7 @@ export const offlineColorChangeEvent = new LocalEvent<{ channel: number, loopId:
 export const playingColorChangeEvent = new LocalEvent<{ channel: number, loopId: number }>(
     'setColorToNowPlaying'
 ) 
+
+export const upcomingLoopColorChangedEvent = new LocalEvent<{ channel: number, loopId: number }>(
+    'setColorBackToUpcoming'
+)
