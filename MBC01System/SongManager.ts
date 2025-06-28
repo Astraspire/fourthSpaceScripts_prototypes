@@ -39,7 +39,8 @@ class SongManager extends hz.Component<typeof SongManager> {
     private beatsPerLoop!: number;
     private channelLoops!: hz.AudioGizmo[][];
     private activeLoops: Record<number,
-        {   channelId: number;
+        {
+            channelId: number;
             loopSectionId: number;
             gizmo: hz.AudioGizmo
         }
@@ -62,15 +63,14 @@ class SongManager extends hz.Component<typeof SongManager> {
     private stopChannel = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
 
-       // marks oldLoop
+        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
 
-        // if none, do nothing
+        // if no current loop on channel, do nothing
         if (!oldLoop) return;
 
-        // stops and fades out playing loop on channel
+        // stops and fades out currently playing loop on channel
         oldLoop.gizmo.stop({ fade: this.fadeTime });
-
 
         // send LocalEvent to set color back to default
         this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
@@ -80,7 +80,7 @@ class SongManager extends hz.Component<typeof SongManager> {
 
         // removes loop from active loops
         delete this.activeLoops[channelId];
-        
+
     }
 
     override preStart() {
@@ -160,15 +160,23 @@ class SongManager extends hz.Component<typeof SongManager> {
 
         // Every interval ms, replay every active loop so they stay in lock-step
         this.async.setInterval(() => {
-            for (const loopGizmo of Object.values(this.activeLoops)) {
 
-                // sends color change to now playing color
-                this.sendLocalBroadcastEvent(playingColorChangeEvent, {
-                    channel: loopGizmo.channelId,
-                    loopId: loopGizmo.loopSectionId
+            this.channelLoops.forEach((loops, channelIdx) => {
+                loops.forEach((gizmo, loopIdx) => {
+                    this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
+                        channel: channelIdx + 1,
+                        loopId: loopIdx + 1,
+                    });
                 });
-                loopGizmo.gizmo.play();
-            }
+            });
+
+            Object.values(this.activeLoops).forEach(({ channelId, loopSectionId, gizmo }) => {
+                this.sendLocalBroadcastEvent(playingColorChangeEvent, {
+                    channel: channelId,
+                    loopId: loopSectionId,
+                });
+                gizmo.play();
+            });
         }, interval);
     }
 }
