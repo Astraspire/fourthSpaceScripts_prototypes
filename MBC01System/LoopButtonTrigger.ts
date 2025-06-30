@@ -19,9 +19,21 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         }));  
     }
 
+    // add check for previously queued loop in channel method here
+    private checkForUpcoming = (): boolean => {
+        console.log('stub - checkForUpcoming method will be added later.');
+        return false;
+    }
+
     // turns button to originalButtonColor
     private buttonOffline = (): void => {
         console.log(`Trying to change to original color: ${this.props.originalButtonColor}`);
+
+
+        // !!FIXME!! place correctly
+        if (this.checkForUpcoming() == true) {
+            return;
+        }
 
         // casts button as MeshEntity to access the style properties
         const thisMesh = this.props.loopButton!.as(hz.MeshEntity);
@@ -70,6 +82,8 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
 
         // listen to playingColorChangeEvent if button is correct match
         this.connectLocalBroadcastEvent(playingColorChangeEvent, (loopData) => {
+            console.log(`Received playingColorChangeEvent on loopButton script.`);
+
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
                 // checks for loopId match
@@ -110,7 +124,6 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
     start() {
         // sets color to default at start
         this.buttonOffline(); 
-
     }
 }
 hz.Component.register(LoopButtonTrigger);
