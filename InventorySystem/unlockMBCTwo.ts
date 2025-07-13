@@ -7,34 +7,24 @@ class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
         inventoryManager: { type: hz.PropTypes.Entity },
     };
 
-  preStart() {
-    this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnPlayerEnterTrigger, this.OnPlayerEnterTrigger);
-    this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnEntityEnterTrigger, this.OnEntityEnterTrigger);
+  override preStart() {
+    this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnPlayerEnterTrigger, this.mbcLuckyUnlockTrigger);
   }
 
   start() {
 
   }
 
-  OnPlayerEnterTrigger(player: Player) {
-    // Add code here that you want to run when a player enters the trigger.
-    // For more details and examples go to:
-    // https://developers.meta.com/horizon-worlds/learn/documentation/code-blocks-and-gizmos/use-the-trigger-zone
-      console.log(`Player ${player.name.get()} entered trigger.`);
+  mbcLuckyUnlockTrigger(playerWhoEntered: Player) {
+      const playerId = playerWhoEntered.name.get();
+      console.log(`Player ${playerId} entered "Lucky" trigger.`);
 
-      this.sendNetworkEvent(
+      this.sendNetworkEvent (
           this.props.inventoryManager!,
-          unlockMBC25, ({
+          unlockMBC25, {
           mbcVariant: "Lucky",
-          playerName: player.name.get(),
-      }));  
-  }
-
-  OnEntityEnterTrigger(entity: Entity) {
-    // Add code here that you want to run when an entity enters the trigger.
-    // The entity will need to have a Gameplay Tag that matches the tag your
-    // trigger is configured to detect.
-    console.log(`Entity ${entity.name.get()} entered trigger`);
+          playerName: playerId,
+      });  
   }
 }
 Component.register(unlockMBCTwo);
