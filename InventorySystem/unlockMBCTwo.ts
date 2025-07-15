@@ -5,26 +5,31 @@ import { unlockMBC25 } from 'shared-events-MBC25';
 class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
     static propsDefinition = {
         inventoryManager: { type: hz.PropTypes.Entity },
+        unlockMBCVariant: { type: hz.PropTypes.String },
     };
 
-  override preStart() {
-    this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnPlayerEnterTrigger, this.mbcLuckyUnlockTrigger);
-  }
 
-  start() {
+    private unlockLuckyMBC(playerName: string, packId: string) {
+        this.sendLocalEvent(
+            this.props.inventoryManager!,
+            unlockMBC25, {
+                unlockPlayerName: playerName,
+                unlockPackId: packId
+        })
+    }
 
-  }
+    override preStart() {
+        this.connectCodeBlockEvent(
+            this.entity,
+            CodeBlockEvents.OnPlayerEnterTrigger,
+            (unlockPlayer) => this.unlockLuckyMBC(unlockPlayer.name.get(), this.props.unlockMBCVariant)
+        )
+    }
 
-  mbcLuckyUnlockTrigger(playerWhoEntered: Player) {
-      const playerId = playerWhoEntered.name.get();
-      console.log(`Player ${playerId} entered "Lucky" trigger.`);
+    start() {
 
-      this.sendNetworkEvent (
-          this.props.inventoryManager!,
-          unlockMBC25, {
-          mbcVariant: "Lucky",
-          playerName: playerId,
-      });  
-  }
+    }
 }
+
+
 Component.register(unlockMBCTwo);
