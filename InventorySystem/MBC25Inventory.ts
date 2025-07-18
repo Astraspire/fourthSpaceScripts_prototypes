@@ -12,34 +12,33 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
 
 
     /** Read and parse the JSON-encoded array of pack IDs */
-    private getUnlockedPacks(player: Player): string[] {
+    private getUnlockedPacks(player: Player): SamplePackEntry[] {
         const raw = this.world.persistentStorage.getPlayerVariable<string>(
             player,
             SOUND_PACKS_PPV
         );
         try {
-            return raw ? (JSON.parse(raw) as string[]) : [];
+            return raw
+                ? (JSON.parse(raw) as SamplePackEntry[])
+                : [];
         } catch {
-            // Fallback on malformed data
             return [];
         }
     }
 
-    /** Add a new pack ID and save back to PPV */
+    /** Add a new { playerName, packId } and save back to PPV */
     private unlockSoundPack(playerName: string, packId: string): void {
-        const player = this.findPlayerByName(playerName);
-
-        const list = this.getUnlockedPacks(player!);
-        if (!list.includes(packId)) {
-            list.push(packId);
+        const player = this.findPlayerByName(playerName)!;
+        const list = this.getUnlockedPacks(player);
+        if (!list.some(e => e.packId === packId && e.playerName === playerName)) {
+            list.push({ playerName, packId });
             this.world.persistentStorage.setPlayerVariable(
-                player!,
+                player,
                 SOUND_PACKS_PPV,
                 JSON.stringify(list)
             );
         }
-        console.log(`${playerName} owns ${packId}? will check inventory...`);
-        this.printUserInventory();
+        console.log(`${playerName} now unlocked the ${packId} pack!`)
     }
 
     private findPlayerByName(playerName: string): Player | null {
@@ -52,10 +51,10 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     }
 
     /** Convert stored IDs into SamplePackEntry objects */
-    private getFullInventory(player: Player): SamplePackEntry[] {
-        return this.getUnlockedPacks(player).map((id) => ({ packId: id }));
+    private getFullInventory(player: Player) {
+        // now returns SamplePackEntry[] directly
+        return this.getUnlockedPacks(player);
     }
-
     private printUserInventory(): void {
         const inventory = this.getFullInventory
         console.log(`${inventory} is owned.`)
