@@ -38,6 +38,8 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 JSON.stringify(list)
             );
         }
+        console.log(`${playerName} owns ${packId}? will check inventory...`);
+        this.printUserInventory();
     }
 
     private findPlayerByName(playerName: string): Player | null {
@@ -59,21 +61,16 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         console.log(`${inventory} is owned.`)
     }
 
-    override preStart() {
+    preStart() {
         this.connectLocalEvent(
-            this.props.luckyUnlockTrigger!,
+            this.entity!,
             unlockMBC25,
-            (unlockPlayer) => {
-                console.log(`${unlockPlayer} = what?`);
-                //this.unlockSoundPack(unlockPlayer.unlockPlayerName, unlockPlayer.unlockPackId)
+            (unlockData) => {
+                console.log(`${unlockData} hit the \'unlocked the LuckyMBC25 event!\''`);
+                this.unlockSoundPack(unlockData.playerName, unlockData.packId)
             }
         );
 
-        this.connectLocalEvent(
-            this.entity,
-            checkMBCInventory,
-            this.printUserInventory,
-        );
     }
 
     // Required lifecycle hook (can be empty)

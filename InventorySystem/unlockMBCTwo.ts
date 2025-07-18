@@ -2,6 +2,8 @@ import * as hz from 'horizon/core';
 import { CodeBlockEvents, Component, Entity, Player } from 'horizon/core';
 import { unlockMBC25 } from 'shared-events-MBC25';
 
+
+// walking through this trigger should unlock the lucky MBC25 for the user
 class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
     static propsDefinition = {
         inventoryManager: { type: hz.PropTypes.Entity },
@@ -13,21 +15,22 @@ class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
         this.sendLocalEvent(
             this.props.inventoryManager!,
             unlockMBC25, {
-                unlockPlayerName: playerName,
-                unlockPackId: packId
-        })
-    }
-
-    override preStart() {
-        this.connectCodeBlockEvent(
-            this.entity,
-            CodeBlockEvents.OnPlayerEnterTrigger,
-            (unlockPlayer) => this.unlockLuckyMBC(unlockPlayer.name.get(), this.props.unlockMBCVariant)
+                playerName,
+                packId
+            }
         )
     }
 
-    start() {
+    preStart() {
 
+    }
+
+    start() {
+        this.connectCodeBlockEvent(
+            this.entity,
+            CodeBlockEvents.OnPlayerEnterTrigger,
+            (unlockData) => this.unlockLuckyMBC(unlockData.name.get(), this.props.unlockMBCVariant)
+        )
     }
 }
 

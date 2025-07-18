@@ -4,7 +4,7 @@ export const changeActiveMBC = new LocalEvent<{ mbcId: string }>(
     'changeActiveMachine'
 )
 
-export const unlockMBC25 = new NetworkEvent<{ playerName: Player, packId: string }>(
+export const unlockMBC25 = new LocalEvent<{ playerName: string, packId: string }>(
     'playerUnlocksNewMBC25'
 )
 
