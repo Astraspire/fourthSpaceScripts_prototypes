@@ -1,7 +1,7 @@
 import * as hz from "horizon/core";
 import { Component, Player } from "horizon/core";
 import { SamplePackEntry } from "./SoundPackTypes";
-import { changeActiveMBC, checkMBCInventory, unlockMBC25 } from "./shared-events-MBC25";
+import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25 } from "./shared-events-MBC25";
 
 const SOUND_PACKS_PPV = "MBC25Inventory:unlockedSoundPacks";
 
@@ -55,7 +55,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             console.log(`${playerName} now unlocked the ${packId} pack!`)
         } else if (list.some(e => e.packId === packId && e.playerName === playerName)) {
             this.sendLocalBroadcastEvent(
-                changeActiveMBC,
+                dropMBC,
                 ({ packId })
             )
         }
