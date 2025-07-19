@@ -28,7 +28,7 @@ class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
     start() {
         this.connectCodeBlockEvent(
             this.entity,
-            CodeBlockEvents.OnPlayerEnterTrigger,
+            CodeBlockEvents.OnPlayerExitTrigger,
             (unlockData) => this.unlockLuckyMBC(unlockData.name.get(), this.props.unlockMBCVariant)
         )
     }

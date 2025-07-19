@@ -4,5 +4,6 @@
 
 
 export type SamplePackEntry = {
+    playerName: string;
     packId: string;
 };
