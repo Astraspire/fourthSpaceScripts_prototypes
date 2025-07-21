@@ -10,13 +10,13 @@ class unlockMBCTwo extends Component<typeof unlockMBCTwo>{
         unlockMBCVariant: { type: hz.PropTypes.String },
     };
 
-
-    private unlockLuckyMBC(playerName: string, packId: string) {
+    // sends unlock info to inventory manager
+    private unlockLuckyMBC(unlockingPlayerName: string, unlockPackId: string) {
         this.sendLocalEvent(
             this.props.inventoryManager!,
             unlockMBC25, {
-                playerName,
-                packId
+                playerName: unlockingPlayerName,
+                packId: unlockPackId
             }
         )
     }
