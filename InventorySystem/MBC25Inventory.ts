@@ -30,17 +30,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
 
     }
 
-    private checkUnlockedPacks(checkingPlayerName: string, checkPackId: string): void {
-        const player = this.findPlayerByName(checkingPlayerName)!;
-        const list = this.getUnlockedPacks(player);
-        if (list.some(e => e.packId === checkPackId && checkingPlayerName)) {
-            this.sendLocalBroadcastEvent(
-                changeActiveMBC,
-                { packId: checkPackId }
-            )
-        }
-    }
-
     /** Add a new { playerName, packId } and save back to PPV */
     private unlockSoundPack(playerName: string, packId: string): void {
         const player = this.findPlayerByName(playerName)!;
@@ -59,10 +48,9 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 ({ packId })
             )
         }
-        
-
     }
 
+    // finds player based on name as string variable
     private findPlayerByName(playerName: string): Player | null {
         return (
             this.world
@@ -72,13 +60,14 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         );
     }
 
-    /** Convert stored IDs into SamplePackEntry objects */
-    private getFullInventory(player: Player) {
+    // Convert stored IDs into SamplePackEntry objects
+    private getFullInventory(playerName: Player) {
         // now returns SamplePackEntry[] directly
-        return this.getUnlockedPacks(player);
+        return this.getUnlockedPacks(playerName);
     }
-    private printUserInventory(): void {
-        const inventory = this.getFullInventory
+
+    private printUserInventory(player: Player): void {
+        const inventory = this.getFullInventory(player);
         console.log(`${inventory} is owned.`);
     }
 
@@ -86,20 +75,24 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     preStart() {
         // checks inventory when LuckyCheck trigger is entered
         this.connectLocalEvent(
-            this.entity,
+            this.entity!,
             checkMBCInventory,
             ({ playerName }) => {
-                this.getFullInventory(playerName);
+                console.log(`checkMBCInventory event is received.`);
+                // prints user's inventory
+                this.printUserInventory(playerName);
+                
             }
         );
 
-        // unlocks Lucky Machine if in inventory 
+        // unlocks Lucky Machine into inventory
         this.connectLocalEvent(
-            this.props.checkForLuckyTrigger!,
+            this.entity!,
             unlockMBC25,
             (unlockData) => {
                 console.log(`${unlockData} hit the \'unlocked the LuckyMBC25 event!\''`);
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
+                this.printUserInventory;
             }
         );
 

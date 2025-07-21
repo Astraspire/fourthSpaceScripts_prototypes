@@ -20,13 +20,13 @@ class LuckyCheck extends Component<typeof LuckyCheck>{
     // For more details and examples go to:
     // https://developers.meta.com/horizon-worlds/learn/documentation/code-blocks-and-gizmos/use-the-trigger-zone
       console.log(`Player ${playerName.name.get()} entered trigger.`);
-      this.connectLocalBroadcastEvent(
+      this.connectLocalEvent(
+          this.props.mbcInventoryObject!,
           checkMBCInventory,
           (playerName) => {
               console.log(playerName);
           }
       );
-
   }
 
 }

@@ -41,7 +41,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop>{
 
 
     preStart() {
-        // connect local event from inventory to drop correct mbc
+        // connect local event from inventory to drop correct mbc25 machine
         this.connectLocalBroadcastEvent(
             dropMBC,
             ({ packId }) => {
@@ -54,7 +54,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop>{
     }
 
     start() {
-        /* 1. cache editor‑placed local position (e.g. y ≈ 12) */
+        /* 1. cache editor‑placed local position  */
         this.initialLocal = this.entity.position.get();
 
         /* 2. raise platform by +100 local units */
