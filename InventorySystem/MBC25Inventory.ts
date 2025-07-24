@@ -1,6 +1,6 @@
 import * as hz from "horizon/core";
 import { Component, Player } from "horizon/core";
-import { SamplePackEntry } from "./SoundPackTypes";
+import { Inventory } from "./SoundPackTypes";
 import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25 } from "./shared-events-MBC25";
 
 const SOUND_PACKS_PPV = "MBC25Inventory:unlockedSoundPacks";
@@ -14,35 +14,33 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
 
 
     /** Read and parse the JSON-encoded array of pack IDs */
-    private getUnlockedPacks(player: Player): SamplePackEntry[] {
+    private getUnlockedPacks(player: Player): Inventory[] {
         const raw = this.world.persistentStorage.getPlayerVariable<string>(
             player,
             SOUND_PACKS_PPV
         );
         try {
             return raw
-                ? (JSON.parse(raw) as SamplePackEntry[])
+                ? (JSON.parse(raw) as Inventory[])
                 : [];
         } catch {
             return [];
         }
-
-
     }
 
     /** Add a new { playerName, packId } and save back to PPV */
     private unlockSoundPack(playerName: string, packId: string): void {
         const player = this.findPlayerByName(playerName)!;
         const list = this.getUnlockedPacks(player);
-        if (!list.some(e => e.packId === packId && e.playerName === playerName)) {
-            list.push({ playerName, packId });
+        if (!list.some(e => e.packId === packId)) {
+            list.push({ packId });
             this.world.persistentStorage.setPlayerVariable(
                 player,
                 SOUND_PACKS_PPV,
                 JSON.stringify(list)
             );
             console.log(`${playerName} now unlocked the ${packId} pack!`)
-        } else if (list.some(e => e.packId === packId && e.playerName === playerName)) {
+        } else if (list.some(e => e.packId === packId)) {
             this.sendLocalBroadcastEvent(
                 dropMBC,
                 ({ packId })
@@ -61,14 +59,22 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     }
 
     // Convert stored IDs into SamplePackEntry objects
-    private getFullInventory(playerName: Player) {
-        // now returns SamplePackEntry[] directly
-        return this.getUnlockedPacks(playerName);
+    private getFullInventory(playerInventory: Inventory) {
+        console.log(`${playerInventory.packId} is unlocked in inventory.`);
     }
 
     private printUserInventory(player: Player): void {
-        const inventory = this.getFullInventory(player);
-        console.log(`${inventory} is owned.`);
+        if (player) {
+            const inventory = this.getUnlockedPacks(player);
+            for (let item of inventory) {
+                console.log(`NEW: ${item} is owned by ${player.name.get()}!!!`)
+            }
+            console.log(`OLD: ${inventory} is owned by ${player.name.get()}.`);
+            return;
+        } else {
+            console.log(`Invalid user for inventory check.`);
+        }
+
     }
 
    
@@ -77,10 +83,10 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         this.connectLocalEvent(
             this.entity!,
             checkMBCInventory,
-            ({ playerName }) => {
+            ({ playerId }) => {
                 console.log(`checkMBCInventory event is received.`);
                 // prints user's inventory
-                this.printUserInventory(playerName);
+                this.printUserInventory(playerId);
                 
             }
         );
@@ -90,9 +96,8 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             this.entity!,
             unlockMBC25,
             (unlockData) => {
-                console.log(`${unlockData} hit the \'unlocked the LuckyMBC25 event!\''`);
+                console.log(`${unlockData.playerName} hit the \'unlocked the ${unlockData.packId} LuckyMBC25 event!\''`);
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
-                this.printUserInventory;
             }
         );
 

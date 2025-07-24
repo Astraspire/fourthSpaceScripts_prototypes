@@ -8,7 +8,7 @@ export const unlockMBC25 = new LocalEvent<{ playerName: string, packId: string }
     'playerUnlocksNewMBC25'
 )
 
-export const checkMBCInventory = new LocalEvent<{ playerName: Player }>(
+export const checkMBCInventory = new LocalEvent<{ playerId: Player }>(
     'checkPlayersInventoryOfMBCs'
 )
 

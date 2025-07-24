@@ -3,7 +3,6 @@
 // Your data shapes for sound-pack entries
 
 
-export type SamplePackEntry = {
-    playerName: string;
+export type Inventory = {
     packId: string;
 };

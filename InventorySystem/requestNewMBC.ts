@@ -8,25 +8,20 @@ class requestNewMBC extends Component<typeof requestNewMBC>{
     };
 
     preStart() {
-        this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnPlayerEnterTrigger, this.OnPlayerEnterTrigger.bind(this));
+        this.connectCodeBlockEvent(this.entity, CodeBlockEvents.OnPlayerEnterTrigger, this.askForMBC.bind(this));
     }
 
     start() {
 
     }
 
-    OnPlayerEnterTrigger(player: Player) {
-        // Add code here that you want to run when a player enters the trigger.
-        // For more details and examples go to:
-        // https://developers.meta.com/horizon-worlds/learn/documentation/code-blocks-and-gizmos/use-the-trigger-zone
-        console.log(`Player ${player.name.get()} entered trigger.`);
+    askForMBC(player: Player) {
+
         this.sendLocalEvent(
             this.props.mbcInventoryObject!,
             checkMBCInventory,
-            { playerName: player }
+            { playerId: player }
         );
     }
-
-
 }
 Component.register(requestNewMBC);
