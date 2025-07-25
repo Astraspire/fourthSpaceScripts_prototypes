@@ -4,9 +4,9 @@ import { Inventory } from "./SoundPackTypes";
 import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25 } from "./shared-events-MBC25";
 
 /**
- * The key used to store per?player state in persistent storage.
+ * The key used to store per‑player state in persistent storage.
  *
- * Horizon Worlds provides a per?player persistent key?value store that
+ * Horizon Worlds provides a per‑player persistent key‑value store that
  * persists across sessions.  We save an array of pack IDs under this
  * key.  Each entry in the array is an object conforming to the
  * {@link Inventory} interface (currently just a packId string).
@@ -21,7 +21,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     }
 
     /** 
-     * Read and parse the JSON?encoded array of pack IDs stored for a
+     * Read and parse the JSON‑encoded array of pack IDs stored for a
      * particular player.
      *
      * The persistent storage returns strings.  We parse the stored
@@ -68,7 +68,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
 
     /**
      * Optional helper to log that a given pack ID exists in the
-     * player's inventory.  In a more feature?complete implementation
+     * player's inventory.  In a more feature‑complete implementation
      * this might convert simple IDs into richer data about each pack.
      *
      * @param playerInventory An inventory record containing the packId.
@@ -112,7 +112,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
      *    player.  Without this call, newly unlocked machines would not
      *    become visible until the next inventory check.
      *
-     * @param playerName The human?readable name of the player who
+     * @param playerName The human‑readable name of the player who
      *                   unlocked the pack.
      * @param packId     The identifier of the pack being unlocked.
      */
@@ -149,10 +149,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 this.printUserInventory(playerId);
 
                 // For each pack the player owns, broadcast a drop event.
-                // This ensures that if a player already has the Lucky
-                // pack (perhaps from a previous session) the machine
-                // will still be dropped when they enter the request or
-                // lucky check trigger.
                 const unlocked = this.getUnlockedPacks(playerId);
                 for (const item of unlocked) {
                     this.sendLocalBroadcastEvent(dropMBC, { packId: item.packId });

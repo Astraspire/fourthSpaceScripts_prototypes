@@ -39,3 +39,29 @@ export const checkMBCInventory = new LocalEvent<{ playerId: Player }>(
 export const dropMBC = new LocalEvent<{ packId: string }>(
     'drop correct MBC based on specification'
 );
+
+/**
+ * Event raised by the UI or other gameplay systems to request that a
+ * specific MBC25 machine become the sole active beat machine.  The
+ * {@link MBCManager} listens for this event to coordinate which
+ * machine is currently in use.  The payload includes the pack
+ * identifier to activate and the name of the player making the
+ * request.  If a machine is already active for another player, the
+ * request may be ignored.
+ */
+export const requestMBCActivation = new LocalEvent<{ playerName: string; packId: string }>(
+    'requestMBC25Activation'
+);
+
+/**
+ * Event raised when a player relinquishes control of the active
+ * MBC25 beat machine.  When this event is received, the
+ * {@link MBCManager} will clear its internal lock and despawn any
+ * currently active machine so that another player may claim a new
+ * one.  The payload simply carries the name of the player giving up
+ * control; if the player does not currently control the machine the
+ * event has no effect.
+ */
+export const relinquishMBC = new LocalEvent<{ playerName: string }>(
+    'relinquishActiveMBC25'
+);
