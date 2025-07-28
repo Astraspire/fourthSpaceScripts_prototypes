@@ -1,80 +1,101 @@
 import * as hz from 'horizon/core';
-import { changeActiveMBC, dropMBC } from "./shared-events-MBC25";
+import { changeActiveMBC, dropMBC } from './shared-events-MBC25';
 
-class MBCDrop extends hz.Component<typeof MBCDrop>{
+/**
+ * MBCDrop controls the visibility and drop animation for a single
+ * MBC25 beat machine.  When an MBC machine is not the currently
+ * active pack it is hidden off‑screen.  When it becomes active the
+ * machine animates from a raised position down to its editor‑set
+ * location.  This component listens for both dropMBC and
+ * changeActiveMBC events and uses a helper to determine whether to
+ * show or hide itself based on the incoming pack identifier.
+ */
+class MBCDrop extends hz.Component<typeof MBCDrop> {
     static propsDefinition = {
+        /** Unique identifier for this machine's sound pack. */
         packId: { type: hz.PropTypes.String },
+        /** Duration of the drop animation, in seconds. */
         dropTime: { type: hz.PropTypes.Number, default: 1 },
+        /** Not used in this implementation but kept for compatibility. */
         requestNewMBCTrigger: { type: hz.PropTypes.Entity },
     };
 
-    /* ───────────── private state ───────────── */
-    private initialLocal!: hz.Vec3;              // local position to land on
-    private updateSub!: hz.EventSubscription;    // on‑update handle
+    /** The initial local position where the machine should land. */
+    private initialLocal!: hz.Vec3;
+    /** Subscription handle for the drop tween update loop. */
+    private updateSub!: hz.EventSubscription;
 
-
-    /* ───────────── drop tween ───────────── */
+    /**
+     * Animate the machine from its current raised position down to its
+     * initial position.  The machine becomes visible and collidable,
+     * and moves smoothly over the configured dropTime.
+     */
     private startDrop() {
-        /* later, when you want to show it to everyone online */
+        console.log(`drop started.`)
+
         this.entity.setVisibilityForPlayers(
-            this.world.getPlayers(),                 // all current players
-            hz.PlayerVisibilityMode.VisibleTo           // show only to them
+            this.world.getPlayers(),
+            hz.PlayerVisibilityMode.VisibleTo
         );
-        this.entity.collidable.set(true);            // collider back on
+        this.entity.collidable.set(true);
 
-
-        const startPos = this.entity.position.get();   // local 112
-        const endPos = this.initialLocal;            // local 12
-        const durationMs = this.props.dropTime! * 1000;
+        const startPos = this.entity.position.get();
+        const endPos = this.initialLocal;
+        const durationMs = (this.props.dropTime ?? 1) * 1000;
         const startTime = Date.now();
 
-        /* update every frame until finished */
         this.updateSub = this.connectLocalBroadcastEvent(hz.World.onUpdate, () => {
             const t = Math.min((Date.now() - startTime) / durationMs, 1);
             this.entity.position.set(hz.Vec3.lerp(startPos, endPos, t));
-
-            if (t === 1) {                                 // finished
-                this.updateSub.disconnect();                 // stop listening
+            if (t === 1) {
+                this.updateSub.disconnect();
             }
         });
     }
 
+    /**
+     * Decide whether to show or hide this machine based on the active
+     * pack identifier.  When packId matches this machine's pack, the
+     * drop animation is triggered.  Otherwise the machine is moved
+     * off‑screen and hidden.
+     *
+     * @param packId The pack identifier to compare against this.props.packId.
+     */
+    private handleActivation(packId: string) {
+        if (packId === this.props.packId) {
+            this.startDrop();
+        } else {
+            const offPos = this.initialLocal.add(new hz.Vec3(0, 100, 0));
+            this.entity.position.set(offPos);
+            this.entity.setVisibilityForPlayers(
+                this.world.getPlayers(),
+                hz.PlayerVisibilityMode.HiddenFrom
+            );
+            this.entity.collidable.set(false);
+        }
+    }
 
     preStart() {
-        // connect local event from inventory to drop correct mbc25 machine
-        this.connectLocalBroadcastEvent(
-            dropMBC,
-            ({ packId }) => {
-                if (packId == this.props.packId) {
-                    this.startDrop
-                }
-            }
-        )
-
+        // Listen for drop events triggered when packs are unlocked.
+        this.connectLocalBroadcastEvent(dropMBC, ({ packId }) => {
+            this.handleActivation(packId);
+        });
+        // Listen for active change events from the MBCManager.
+        this.connectLocalBroadcastEvent(changeActiveMBC, ({ packId }) => {
+            this.handleActivation(packId);
+        });
     }
 
     start() {
-        /* 1. cache editor‑placed local position  */
+        // Cache the editor‑placed position and start hidden.
         this.initialLocal = this.entity.position.get();
-
-        /* 2. raise platform by +100 local units */
         this.entity.position.set(this.initialLocal.add(new hz.Vec3(0, 100, 0)));
-
-        /* 3. hide from everyone while floating */
         this.entity.setVisibilityForPlayers(
-            this.world.getPlayers(),                 // array (can be empty)
-            hz.PlayerVisibilityMode.HiddenFrom          // mode
+            this.world.getPlayers(),
+            hz.PlayerVisibilityMode.HiddenFrom
         );
         this.entity.collidable.set(false);
-
-        /* 4. listen for the unlock event */
-        this.connectLocalEvent(
-            this.entity,
-            changeActiveMBC,
-            (swapData) => {
-                if (swapData.packId === this.props.packId) this.startDrop();
-        });
     }
-
 }
+
 hz.Component.register(MBCDrop);
