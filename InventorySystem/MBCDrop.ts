@@ -1,5 +1,6 @@
 import * as hz from 'horizon/core';
 import { changeActiveMBC, dropMBC } from './shared-events-MBC25';
+import { Quaternion } from 'horizon/core';
 
 /**
  * MBCDrop controls the visibility and drop animation for a single
@@ -10,14 +11,20 @@ import { changeActiveMBC, dropMBC } from './shared-events-MBC25';
  * changeActiveMBC events and uses a helper to determine whether to
  * show or hide itself based on the incoming pack identifier.
  */
+
+/** Map keys → your own enum/strings for clarity */
+type MachineKey = 'Lucky' | 'SoMeta';
+
 class MBCDrop extends hz.Component<typeof MBCDrop> {
     static propsDefinition = {
-        /** Unique identifier for this machine's sound pack. */
-        packId: { type: hz.PropTypes.String },
-        /** Duration of the drop animation, in seconds. */
-        dropTime: { type: hz.PropTypes.Number, default: 1 },
-        /** Not used in this implementation but kept for compatibility. */
-        requestNewMBCTrigger: { type: hz.PropTypes.Entity },
+        /** Lucky Beat Machine */
+        luckyMBC25: { type: hz.PropTypes.Asset },
+        /** SoMeta Beat Machine */
+        soMetaMBC25: { type: hz.PropTypes.Asset },
+
+        stagePos: { type: hz.PropTypes.Vec3, default: new hz.Vec3(0, 0, 0) },
+        stageRot: { type: hz.PropTypes.Quaternion, default: Quaternion.one },
+        stageScale: { type: hz.PropTypes.Vec3, default: hz.Vec3.one },
     };
 
     /** The initial local position where the machine should land. */
@@ -25,32 +32,47 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
     /** Subscription handle for the drop tween update loop. */
     private updateSub!: hz.EventSubscription;
 
+    private currentRoot?: hz.Entity; // root of the machine now on the stage
+    private currentKey?: string; // remember which one is up
+
     /**
-     * Animate the machine from its current raised position down to its
-     * initial position.  The machine becomes visible and collidable,
-     * and moves smoothly over the configured dropTime.
+     * despawns the current machine and switches to the incoming machine instead
      */
-    private startDrop() {
-        console.log(`drop started.`)
+    async switchTo(key: string | MachineKey) {
 
-        this.entity.setVisibilityForPlayers(
-            this.world.getPlayers(),
-            hz.PlayerVisibilityMode.VisibleTo
+        if (this.currentKey === key) return; // already active machine
+
+        // despawn previous machine (if any)
+        if (this.currentRoot?.exists()) {
+            await this.world.deleteAsset(this.currentRoot); // despawn bundle
+        }
+
+        // look up asset to spawn
+        const asset = this.assetFromKey(key as MachineKey);
+        if (!asset) {
+            console.warn(`No asset assigned for key ${key}`);
+            return;
+        }
+
+        // spawn the new machine
+        const [root] = await this.world.spawnAsset(
+            asset,
+            this.props.stagePos,
+            this.props.stageRot,
+            this.props.stageScale,
         );
-        this.entity.collidable.set(true);
 
-        const startPos = this.entity.position.get();
-        const endPos = this.initialLocal;
-        const durationMs = (this.props.dropTime ?? 1) * 1000;
-        const startTime = Date.now();
+        // remember which machine is live
+        this.currentRoot = root;
+        this.currentKey = key;
+    }
 
-        this.updateSub = this.connectLocalBroadcastEvent(hz.World.onUpdate, () => {
-            const t = Math.min((Date.now() - startTime) / durationMs, 1);
-            this.entity.position.set(hz.Vec3.lerp(startPos, endPos, t));
-            if (t === 1) {
-                this.updateSub.disconnect();
-            }
-        });
+    /** Helper: map enum → Asset prop */
+    private assetFromKey(key: MachineKey): hz.Asset | undefined {
+        switch (key) {
+            case 'Lucky': return this.props.luckyMBC25;
+            case 'SoMeta': return this.props.soMetaMBC25;
+        }
     }
 
     /**
@@ -62,17 +84,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
      * @param packId The pack identifier to compare against this.props.packId.
      */
     private handleActivation(packId: string) {
-        if (packId === this.props.packId) {
-            this.startDrop();
-        } else {
-            const offPos = this.initialLocal.add(new hz.Vec3(0, 100, 0));
-            this.entity.position.set(offPos);
-            this.entity.setVisibilityForPlayers(
-                this.world.getPlayers(),
-                hz.PlayerVisibilityMode.HiddenFrom
-            );
-            this.entity.collidable.set(false);
-        }
+        this.switchTo(packId);
     }
 
     preStart() {
@@ -87,14 +99,6 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
     }
 
     start() {
-        // Cache the editor‑placed position and start hidden.
-        this.initialLocal = this.entity.position.get();
-        this.entity.position.set(this.initialLocal.add(new hz.Vec3(0, 100, 0)));
-        this.entity.setVisibilityForPlayers(
-            this.world.getPlayers(),
-            hz.PlayerVisibilityMode.HiddenFrom
-        );
-        this.entity.collidable.set(false);
     }
 }
 

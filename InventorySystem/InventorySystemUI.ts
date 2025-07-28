@@ -91,8 +91,8 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
                         children: Text({
                             text: `Load ${packId} pack`,
                             style: {
-                                fontSize: 20,
-                                color: 'white',
+                                fontSize: 22,
+                                color: 'green',
                             },
                         }),
                     })
@@ -130,7 +130,7 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
                     backgroundColor: 'rgba(255,0,0,0.2)',
                 },
                 children: Text({
-                    text: 'Relinquish MBC25',
+                    text: 'Put away your MBC25',
                     style: {
                         fontSize: 20,
                         color: 'red',
