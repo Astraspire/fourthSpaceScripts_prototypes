@@ -136,10 +136,22 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         } else {
             console.log(`${playerName} already owns the ${packId} pack.`);
         }
+<<<<<<< Updated upstream
+=======
+
+    }
+
+    private resetActivePerformer(player: hz.Player): void {
+        const playerName = player.name.get();
+
+        if (player.name.get() === this.activePerformer) {
+            this.activePerformer = "";
+        }
+>>>>>>> Stashed changes
     }
 
     preStart() {
-        // 
+        // requests to activate or switch the active MBC25
         this.connectLocalEvent(
             this.entity!,
             requestMBCActivation,
@@ -185,6 +197,16 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
             }
         );
+<<<<<<< Updated upstream
+=======
+
+        this.connectCodeBlockEvent(
+            this.entity!,
+            hz.CodeBlockEvents.OnPlayerExitWorld,
+            this.resetActivePerformer
+        );
+
+>>>>>>> Stashed changes
     }
 
     start() {

@@ -64,6 +64,43 @@ class MBCManager extends hz.Component<typeof MBCManager> {
         }
     }
 
+    private forfeitControlCountdown(player: hz.Player): void {
+        const playerName = player.name.get();
+
+        const durationMs = 30_000;
+        const startTime = Date.now();
+        let aborted = false;
+
+        // subscribe once, set flag on AFK-exit
+        const exitSub = this.connectCodeBlockEvent(
+            this.entity!,
+            hz.CodeBlockEvents.OnPlayerExitAFK,
+            () => {
+                aborted = true;
+                exitSub.disconnect();
+            }
+        );
+
+        // schedule a repeating check every 100 ms
+        const intervalId = this.async.setInterval(() => {
+            if (aborted) {
+                // player returned — cancel interval and bail out
+                this.async.clearInterval(intervalId);
+                return;
+            }
+
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= durationMs) {
+                // time’s up — do your forfeit logic
+                if (playerName === this.controllingPlayer) {
+                    this.activePack = null;
+                    this.controllingPlayer = null;
+                    this.sendLocalBroadcastEvent(changeActiveMBC, { packId: '' });
+                }
+                this.async.clearInterval(intervalId);
+            }
+        }, 100);
+    }
     preStart() {
         // Listen for activation requests from the UI or other systems.
         this.connectLocalEvent(
@@ -77,7 +114,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     return;
                 }
                 // if active performer wants to change pack then broadcast change event
-                if (!this.activePack || this.controllingPlayer === playerName) {
+                if (!this.activePack || this.controllingPlayer === "null" || this.controllingPlayer === playerName) {
                     this.activePack = packId;
                     this.controllingPlayer = playerName;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId });
@@ -116,6 +153,16 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                 }
             }
         );
+<<<<<<< Updated upstream
+=======
+
+        this.connectCodeBlockEvent(
+            this.entity!,
+            hz.CodeBlockEvents.OnPlayerEnterAFK,
+            this.forfeitControlCountdown,
+        );
+
+>>>>>>> Stashed changes
     }
 
     start() {
