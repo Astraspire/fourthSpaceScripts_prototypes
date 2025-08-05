@@ -153,8 +153,6 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                 }
             }
         );
-<<<<<<< Updated upstream
-=======
 
         this.connectCodeBlockEvent(
             this.entity!,
@@ -162,7 +160,6 @@ class MBCManager extends hz.Component<typeof MBCManager> {
             this.forfeitControlCountdown,
         );
 
->>>>>>> Stashed changes
     }
 
     start() {

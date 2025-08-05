@@ -136,8 +136,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         } else {
             console.log(`${playerName} already owns the ${packId} pack.`);
         }
-<<<<<<< Updated upstream
-=======
 
     }
 
@@ -147,7 +145,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         if (player.name.get() === this.activePerformer) {
             this.activePerformer = "";
         }
->>>>>>> Stashed changes
+
     }
 
     preStart() {
@@ -197,8 +195,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
             }
         );
-<<<<<<< Updated upstream
-=======
+
 
         this.connectCodeBlockEvent(
             this.entity!,
@@ -206,7 +203,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             this.resetActivePerformer
         );
 
->>>>>>> Stashed changes
     }
 
     start() {
