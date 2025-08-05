@@ -189,6 +189,13 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
             }
         );
+
+        // remove active performer when they leave the world
+        this.world.onPlayerRemoved.add((player: Player) => {
+            if (player.name.get() === this.activePerformer) {
+                this.activePerformer = "";
+            }
+        });
     }
 
     start() {
