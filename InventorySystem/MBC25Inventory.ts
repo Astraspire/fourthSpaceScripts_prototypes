@@ -21,7 +21,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     }
 
     // sets and stores active performer
-    private activePerformer!: string;
+    private activePerformer: string = "";
 
     /** 
      * Read and parse the JSON‑encoded array of pack IDs stored for a
@@ -136,6 +136,10 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         } else {
             console.log(`${playerName} already owns the ${packId} pack.`);
         }
+
+        // Ensure the newly unlocked (or already owned) pack is dropped
+        // so the player can interact with it immediately.
+        this.sendLocalBroadcastEvent(dropMBC, { packId });
     }
 
     preStart() {
@@ -185,6 +189,13 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 this.unlockSoundPack(unlockData.playerName, unlockData.packId);
             }
         );
+
+        // remove active performer when they leave the world
+        this.world.onPlayerRemoved.add((player: Player) => {
+            if (player.name.get() === this.activePerformer) {
+                this.activePerformer = "";
+            }
+        });
     }
 
     start() {

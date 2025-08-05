@@ -116,6 +116,15 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                 }
             }
         );
+
+        // clear controlling player if they leave the world
+        this.world.onPlayerRemoved.add((player: hz.Player) => {
+            if (player.name.get() === this.controllingPlayer) {
+                this.activePack = null;
+                this.controllingPlayer = null;
+                this.sendLocalBroadcastEvent(changeActiveMBC, { packId: '' });
+            }
+        });
     }
 
     start() {
