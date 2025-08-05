@@ -147,9 +147,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         if (player.name.get() === this.activePerformer) {
             this.activePerformer = "";
         }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
     }
 
@@ -209,9 +206,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             this.resetActivePerformer
         );
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
     }
 
