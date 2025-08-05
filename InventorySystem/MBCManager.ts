@@ -162,6 +162,9 @@ class MBCManager extends hz.Component<typeof MBCManager> {
             this.forfeitControlCountdown,
         );
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
 
