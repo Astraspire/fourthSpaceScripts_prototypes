@@ -1,5 +1,6 @@
 import * as hz from 'horizon/core';
 import { Player } from 'horizon/core';
+import { openSoundwaveStore, closeSoundwaveStore } from './shared-events-MBC25';
 
 /**
  * SoundwaveStoreTrigger opens the SoundwaveStoreUI when a player enters a
@@ -14,14 +15,13 @@ class SoundwaveStoreTrigger extends hz.Component<typeof SoundwaveStoreTrigger> {
 
     private openStore = (player: Player): void => {
         if (this.props.storeUI) {
-            // Show the UI only to the entering player
-            player.worldUi.open(this.props.storeUI);
+            this.sendLocalEvent(this.props.storeUI, openSoundwaveStore, { player });
         }
     };
 
     private closeStore = (player: Player): void => {
         if (this.props.storeUI) {
-            player.worldUi.close(this.props.storeUI);
+            this.sendLocalEvent(this.props.storeUI, closeSoundwaveStore, { player });
         }
     };
 

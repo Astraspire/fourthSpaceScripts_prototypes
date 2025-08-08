@@ -1,7 +1,12 @@
 import * as hz from 'horizon/core';
 import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
 import { Player } from 'horizon/core';
-import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
+import {
+    purchasePackWithSoundwaves,
+    soundwaveBalanceChanged,
+    openSoundwaveStore,
+    closeSoundwaveStore,
+} from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -53,6 +58,24 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                     this.balance = payload.balance;
                     this.rerender();
                 }
+            }
+        );
+
+        // Open the store UI when requested.
+        this.connectLocalEvent(
+            this.entity!,
+            openSoundwaveStore,
+            ({ player }: { player: Player }) => {
+                player.worldUi.open(this.entity!);
+            }
+        );
+
+        // Close the store UI when requested.
+        this.connectLocalEvent(
+            this.entity!,
+            closeSoundwaveStore,
+            ({ player }: { player: Player }) => {
+                player.worldUi.close(this.entity!);
             }
         );
     }
