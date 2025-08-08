@@ -97,3 +97,12 @@ export const soundwaveBalanceChanged = new LocalEvent<{
 }>(
     'soundwaveBalanceChanged'
 );
+
+/**
+ * Broadcast when the MBC25 machine starts or stops playing loops so
+ * other systems can react to audible music state.
+ */
+export const machinePlayState = new LocalEvent<{ isPlaying: boolean }>(
+    'mbc25MachinePlayState'
+);
+

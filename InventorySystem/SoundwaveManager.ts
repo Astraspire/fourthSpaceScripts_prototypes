@@ -1,6 +1,5 @@
 import * as hz from 'horizon/core';
 import { Player } from 'horizon/core';
-import { showNotification } from 'horizon/ui';
 import { machinePlayState } from '../MBC25/shared-events';
 import {
     activePerformerChanged,
@@ -132,6 +131,12 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         );
 
         // Listen for machine play state.
+        this.connectLocalBroadcastEvent(
+            machinePlayState,
+            (payload: { isPlaying: boolean }) => {
+                this.machinePlaying = payload.isPlaying;
+            }
+        );
         this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
             this.machinePlaying = isPlaying;
         });

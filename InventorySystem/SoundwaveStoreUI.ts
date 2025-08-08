@@ -38,13 +38,18 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     override preStart() {
         // Update balance when the manager notifies of changes.
-        this.connectLocalBroadcastEvent(soundwaveBalanceChanged, ({ playerName, balance }) => {
-            const player = this.getCurrentPlayer();
-            if (player && player.name.get() === playerName) {
-                this.balance = balance;
-                this.rerender();
+        this.connectLocalBroadcastEvent(
+            soundwaveBalanceChanged,
+            (payload: { playerName: string; balance: number }) => {
+                const player = this.getCurrentPlayer();
+                if (player && player.name.get() === payload.playerName) {
+                    this.balance = payload.balance;
+                    this.rerender();
+                }
             }
-        });
+        );
+    }
+
     }
 
     initializeUI(): UINode {
@@ -69,7 +74,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             TextInput({
                 text: this.searchTerm,
                 placeholder: 'Search packs',
-                onTextChanged: (_p, text) => {
+                onTextChanged: (_p: Player, text: string) => {
                     this.searchTerm = text;
                     this.rerender();
                 },
@@ -80,7 +85,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         for (const pack of filtered) {
             children.push(
                 Pressable({
-                    onPress: (_p) => {
+                    onPress: (_p: Player) => {
                         const manager: any = (this.props as any).managerEntity;
                         if (manager) {
                             this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
