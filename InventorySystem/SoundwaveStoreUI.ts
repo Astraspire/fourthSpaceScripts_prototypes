@@ -1,7 +1,13 @@
 import * as hz from 'horizon/core';
 import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
 import { Player } from 'horizon/core';
-import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
+import {
+    purchasePackWithSoundwaves,
+    soundwaveBalanceChanged,
+    openSoundwaveStore,
+    closeSoundwaveStore,
+} from './shared-events-MBC25';
+import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
  * Simple UI panel that lets players spend soundwave points on additional
@@ -38,8 +44,8 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     private getBalance(player: Player | null): number {
         const key = 'SoundwaveManager:points';
         if (!player) return 0;
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(player, key);
-        return raw ? parseInt(raw, 10) : 0;
+        const raw = this.world.persistentStorage.getPlayerVariable<number>(player, key);
+        return raw ?? 0;
     }
 
     override preStart() {
@@ -54,42 +60,37 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 }
             }
         );
+
+        // Open the store UI when requested.
+        this.connectLocalEvent(
+            this.entity!,
+            openSoundwaveStore,
+            ({ player }: { player: Player }) => {
+                player.worldUi.open(this.entity!);
+            }
+        );
+
+        // Close the store UI when requested.
+        this.connectLocalEvent(
+            this.entity!,
+            closeSoundwaveStore,
+            ({ player }: { player: Player }) => {
+                player.worldUi.close(this.entity!);
+            }
+        );
     }
      
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';
         if (!player) return [];
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(player, key);
-        let list: Array<{ packId: string }> = [];
-        let changed = false;
-
-        if (raw) {
-            try {
-                list = JSON.parse(raw) as Array<{ packId: string }>;
-            } catch {
-                list = [];
-                changed = true;
-            }
+        let mask = this.world.persistentStorage.getPlayerVariable<number>(player, key) ?? 0;
+        const updated = addDefaultPacks(mask);
+        if (updated !== mask) {
+            mask = updated;
+            this.world.persistentStorage.setPlayerVariable(player, key, mask);
         }
-
-        const defaults = ['MBC25-LUCKY', 'MBC25-SOMETA'];
-        for (const id of defaults) {
-            if (!list.some(p => p.packId === id)) {
-                list.push({ packId: id });
-                changed = true;
-            }
-        }
-
-        if (!raw || changed) {
-            this.world.persistentStorage.setPlayerVariable(
-                player,
-                key,
-                JSON.stringify(list)
-            );
-        }
-
-        return list;
+        return maskToPackList(mask);
     }
 
     initializeUI(): UINode {

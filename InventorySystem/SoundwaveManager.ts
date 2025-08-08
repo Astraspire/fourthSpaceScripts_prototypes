@@ -31,11 +31,11 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
 
     /** Retrieve a player's current soundwave balance. */
     private getBalance(player: Player): number {
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(
+        const raw = this.world.persistentStorage.getPlayerVariable<number>(
             player,
             this.SOUNDWAVE_PPV
         );
-        return raw ? parseInt(raw, 10) : 0;
+        return raw ?? 0;
     }
 
     /** Update a player's soundwave balance and notify UI listeners. */
@@ -43,7 +43,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         this.world.persistentStorage.setPlayerVariable(
             player,
             this.SOUNDWAVE_PPV,
-            balance.toString()
+            balance
         );
         this.sendLocalBroadcastEvent(soundwaveBalanceChanged, {
             playerName: player.name.get(),
