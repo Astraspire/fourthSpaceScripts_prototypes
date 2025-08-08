@@ -51,10 +51,19 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         });
     }
 
+    /** Display a basic notification to the given player. */
+    private showNotification(
+        player: Player,
+        opts: { text: string; position: { horizontal: 'left' | 'right'; vertical: 'top' | 'bottom' } }
+    ): void {
+        // Horizon currently lacks a built-in toast API, so log to console.
+        console.log(`[Notification to ${player.name.get()}] ${opts.text}`);
+    }
+
     /** Show a one-time toast to listeners when they start earning points. */
     private showListenerToast(player: Player): void {
         // Hypothetical API for displaying a toast in the top-left corner.
-        showNotification(player, {
+        this.showNotification(player, {
             text: 'Earning soundwaves!',
             position: { horizontal: 'left', vertical: 'top' },
         });
@@ -62,7 +71,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
 
     /** Show a one-time toast to performers when they receive amplified points. */
     private showPerformerToast(player: Player): void {
-        showNotification(player, {
+        this.showNotification(player, {
             text: 'Amplified soundwaves active!',
             position: { horizontal: 'left', vertical: 'bottom' },
         });
