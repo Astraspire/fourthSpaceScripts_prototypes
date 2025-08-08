@@ -1,24 +1,12 @@
 import * as hz from 'horizon/core';
 import { Player } from 'horizon/core';
+import { machinePlayState } from '../MBC25/shared-events';
 import {
-    machinePlayState,
     activePerformerChanged,
     purchasePackWithSoundwaves,
     soundwaveBalanceChanged,
     unlockMBC25,
 } from './shared-events-MBC25';
-
-/**
- * Placeholder notification helper. In the real environment this would
- * display a toast on the player's screen. Here we simply log the message
- * so the code type-checks without depending on a specific UI API.
- */
-function showNotification(
-    player: Player,
-    opts: { text: string; position: { horizontal: string; vertical: string } }
-): void {
-    console.log(`Notify ${player.name.get()}: ${opts.text}`);
-}
 
 /**
  * SoundwaveManager tracks and awards "soundwave" points to players based on
@@ -149,6 +137,9 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
                 this.machinePlaying = payload.isPlaying;
             }
         );
+        this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
+            this.machinePlaying = isPlaying;
+        });
 
         // Listen for performer changes.
         this.connectLocalBroadcastEvent(activePerformerChanged, ({ playerName }) => {

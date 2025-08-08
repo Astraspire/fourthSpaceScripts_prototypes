@@ -105,3 +105,4 @@ export const soundwaveBalanceChanged = new LocalEvent<{
 export const machinePlayState = new LocalEvent<{ isPlaying: boolean }>(
     'mbc25MachinePlayState'
 );
+

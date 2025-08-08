@@ -1,24 +1,7 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable, TextInput } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
-
-/**
- * Minimal placeholder text input component. In a full Horizon environment
- * this would provide an editable field; here we simply render static text
- * so the module type-checks without depending on a specific UI widget.
- */
-function TextInput(props: {
-    text: string;
-    placeholder?: string;
-    onTextChanged?: (player: Player, text: string) => void;
-    style?: any;
-}): UINode {
-    return View({
-        children: Text({ text: props.text || props.placeholder || '' }),
-        style: props.style,
-    });
-}
 
 /**
  * Simple UI panel that lets players spend soundwave points on additional
@@ -30,8 +13,8 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
-    protected panelWidth: number = 500;
-    protected panelHeight: number = 400;
+    private panelWidth = 500;
+    private panelHeight = 400;
 
     private searchTerm: string = '';
     private balance: number = 0;
@@ -67,9 +50,6 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         );
     }
 
-    /** Placeholder to satisfy calls to rerender when state changes. */
-    private rerender(): void {
-        // In an actual UI environment this would refresh the displayed UI.
     }
 
     initializeUI(): UINode {
