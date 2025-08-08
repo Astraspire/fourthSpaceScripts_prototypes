@@ -1,6 +1,6 @@
 import * as hz from 'horizon/core';
 import { Player } from 'horizon/core';
-import { machinePlayState } from '../MBC25/shared-events';
+import { machinePlayState } from './shared-events-MBC25';
 import {
     activePerformerChanged,
     purchasePackWithSoundwaves,

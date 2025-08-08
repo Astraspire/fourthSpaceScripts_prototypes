@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable, TextInput } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
 
@@ -13,11 +13,11 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
-    private panelWidth = 500;
-    private panelHeight = 400;
+    panelWidth = 500;
+    panelHeight = 400;
 
-    private searchTerm: string = '';
-    private balance: number = 0;
+    searchTerm: string = '';
+    balance: number = 0;
 
     private readonly STORE_PACKS = [
         { packId: 'MBC25-LUCKY', cost: 10 },
@@ -49,8 +49,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             }
         );
     }
-
-    }
+     
 
     initializeUI(): UINode {
         const player = this.getCurrentPlayer();
