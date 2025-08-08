@@ -26,6 +26,8 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     private readonly STORE_PACKS = [
         { packId: 'MBC25-LUCKY', cost: 10 },
         { packId: 'MBC25-SOMETA', cost: 20 },
+        // Low-cost test machine to exercise the soundwave credit system
+        { packId: 'MBC25-TEST', cost: 1 },
     ];
 
     private getCurrentPlayer(): Player | null {
