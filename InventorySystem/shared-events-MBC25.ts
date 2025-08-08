@@ -65,3 +65,43 @@ export const requestMBCActivation = new LocalEvent<{ playerName: string; packId:
 export const relinquishMBC = new LocalEvent<{ playerName: string }>(
     'relinquishActiveMBC25'
 );
+
+/**
+ * Broadcast whenever the player controlling the active machine changes.
+ * Payload contains the new performer's name or null if no one owns the
+ * machine.  This allows other systems to react to performer swaps.
+ */
+export const activePerformerChanged = new LocalEvent<{ playerName: string | null }>(
+    'activePerformerChanged'
+);
+
+/**
+ * Event raised when a player attempts to purchase a sound pack using
+ * soundwave points via the store UI.
+ */
+export const purchasePackWithSoundwaves = new LocalEvent<{
+    playerName: string;
+    packId: string;
+    cost: number;
+}>(
+    'purchasePackWithSoundwaves'
+);
+
+/**
+ * Fired whenever a player's soundwave balance is updated so UI elements
+ * can refresh their displays.
+ */
+export const soundwaveBalanceChanged = new LocalEvent<{
+    playerName: string;
+    balance: number;
+}>(
+    'soundwaveBalanceChanged'
+);
+
+/**
+ * Broadcast when the MBC25 machine starts or stops playing loops so
+ * other systems can react to audible music state.
+ */
+export const machinePlayState = new LocalEvent<{ isPlaying: boolean }>(
+    'mbc25MachinePlayState'
+);

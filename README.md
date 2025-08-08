@@ -35,6 +35,12 @@ Controls spawning and visibility of the actual machine prefabs. When it receives
 ### `unlockMBCTwo.ts`
 A utility component for trigger zones. When a player exits the trigger it emits an `unlockMBC25` event to grant the configured pack and causes the machine to drop for that player.
 
+### Soundwave system
+The new soundwave point system rewards players for participating in music sessions. The `SoundwaveManager.ts` component tracks
+points over time while a machine is playing and stores the balance in persistent player data. `SoundwaveStoreUI.ts` provides a
+simple shop where players can spend their points to unlock additional beat packs. UI toasts inform listeners and performers the
+first time they begin accumulating points.
+
 ## MBC25 scripts
 
 The `MBC25` directory contains the behavior for the beat machine itself. Important files include:
