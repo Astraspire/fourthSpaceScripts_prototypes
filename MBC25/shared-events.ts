@@ -22,3 +22,9 @@ export const playingColorChangeEvent = new LocalEvent<{ channel: number, loopId:
 export const upcomingLoopColorChangedEvent = new LocalEvent<{ channel: number, loopId: number }>(
     'setColorBackToUpcoming'
 )
+
+// Broadcast when the machine transitions between idle and actively
+// playing loops.  Other systems listen to know when music is audible.
+export const machinePlayState = new LocalEvent<{ isPlaying: boolean }>(
+    'mbc25MachinePlayState'
+)
