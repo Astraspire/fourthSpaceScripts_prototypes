@@ -61,23 +61,6 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             }
         );
 
-        // Open the store UI when requested.
-        this.connectLocalEvent(
-            this.entity!,
-            openSoundwaveStore,
-            ({ player }: { player: Player }) => {
-                player.worldUi.open(this.entity!);
-            }
-        );
-
-        // Close the store UI when requested.
-        this.connectLocalEvent(
-            this.entity!,
-            closeSoundwaveStore,
-            ({ player }: { player: Player }) => {
-                player.worldUi.close(this.entity!);
-            }
-        );
     }
      
 

@@ -13,7 +13,7 @@ import { Quaternion } from 'horizon/core';
  */
 
 /** Map keys → your own enum/strings for clarity */
-type MachineKey = 'Lucky' | 'SoMeta';
+type MachineKey = 'MBC25-LUCKY' | 'MBC25-SOMETA';
 
 class MBCDrop extends hz.Component<typeof MBCDrop> {
     static propsDefinition = {
@@ -76,8 +76,8 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
     /** Helper: map enum → Asset prop */
     private assetFromKey(key: MachineKey): hz.Asset | undefined {
         switch (key) {
-            case 'Lucky': return this.props.luckyMBC25;
-            case 'SoMeta': return this.props.soMetaMBC25;
+            case 'MBC25-LUCKY': return this.props.luckyMBC25;
+            case 'MBC25-SOMETA': return this.props.soMetaMBC25;
         }
     }
 
