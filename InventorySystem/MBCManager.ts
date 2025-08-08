@@ -4,6 +4,7 @@ import {
     requestMBCActivation,
     relinquishMBC,
     dropMBC,
+    activePerformerChanged,
 } from './shared-events-MBC25';
 
 /**
@@ -96,6 +97,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     this.activePack = null;
                     this.controllingPlayer = null;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId: '' });
+                    this.sendLocalBroadcastEvent(activePerformerChanged, { playerName: null });
                 }
                 this.async.clearInterval(intervalId);
             }
@@ -118,6 +120,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     this.activePack = packId;
                     this.controllingPlayer = playerName;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId });
+                    this.sendLocalBroadcastEvent(activePerformerChanged, { playerName });
                 } else {
                     console.log(
                         `MBCManager: Machine already in use by ${this.controllingPlayer}. Request by ${playerName} ignored.`
@@ -138,6 +141,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     this.activePack = null;
                     this.controllingPlayer = null;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId: '' });
+                    this.sendLocalBroadcastEvent(activePerformerChanged, { playerName: null });
                 }
             }
         );
@@ -150,6 +154,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     this.activePack = packId;
                     this.controllingPlayer = null;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId });
+                    this.sendLocalBroadcastEvent(activePerformerChanged, { playerName: null });
                 }
             }
         );
