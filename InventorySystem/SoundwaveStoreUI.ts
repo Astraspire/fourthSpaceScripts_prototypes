@@ -1,12 +1,12 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable, TextInput } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
 
 /**
  * Simple UI panel that lets players spend soundwave points on additional
- * beat packs.  The player can search available packs and purchase them if
- * they have enough balance.
+ * beat packs. Packs are presented in a scrollable list and can be purchased
+ * if the player has enough balance.
  */
 class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     static propsDefinition = {
@@ -16,7 +16,6 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     panelWidth = 500;
     panelHeight = 400;
 
-    searchTerm: string = '';
     balance: number = 0;
 
     /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
@@ -56,14 +55,47 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     }
      
 
+    private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
+        const key = 'MBC25Inventory:unlockedSoundPacks';
+        if (!player) return [];
+        const raw = this.world.persistentStorage.getPlayerVariable<string>(player, key);
+        let list: Array<{ packId: string }> = [];
+        let changed = false;
+
+        if (raw) {
+            try {
+                list = JSON.parse(raw) as Array<{ packId: string }>;
+            } catch {
+                list = [];
+                changed = true;
+            }
+        }
+
+        const defaults = ['MBC25-LUCKY', 'MBC25-SOMETA'];
+        for (const id of defaults) {
+            if (!list.some(p => p.packId === id)) {
+                list.push({ packId: id });
+                changed = true;
+            }
+        }
+
+        if (!raw || changed) {
+            this.world.persistentStorage.setPlayerVariable(
+                player,
+                key,
+                JSON.stringify(list)
+            );
+        }
+
+        return list;
+    }
+
     initializeUI(): UINode {
         const player = this.getCurrentPlayer();
         const playerName = player ? player.name.get() : '';
         this.balance = this.getBalance(player);
-
-        const filtered = this.STORE_PACKS.filter(p =>
-            p.packId.toLowerCase().includes(this.searchTerm.toLowerCase())
-        );
+        const owned = this.getUnlockedPacks(player).map(p => p.packId);
+        const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
 
         const children: UINode[] = [];
 
@@ -74,40 +106,49 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             })
         );
 
-        children.push(
-            TextInput({
-                text: this.searchTerm,
-                placeholder: 'Search packs',
-                onTextChanged: (_p: Player, text: string) => {
-                    this.searchTerm = text;
-                    this.rerender();
-                },
-                style: { marginBottom: 12 },
-            })
-        );
+        if (available.length > 0) {
+            const packButtons: UINode[] = [];
+            for (const pack of available) {
+                packButtons.push(
+                    Pressable({
+                        onPress: (_p: Player) => {
+                            const manager: any = (this.props as any).managerEntity;
+                            if (manager) {
+                                this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
+                                    playerName,
+                                    packId: pack.packId,
+                                    cost: pack.cost,
+                                });
+                            }
+                        },
+                        style: {
+                            marginBottom: 8,
+                            padding: 4,
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        children: Text({
+                            text: `${pack.packId} - ${pack.cost} SW`,
+                            style: { fontSize: 20, color: 'cyan' },
+                        }),
+                    })
+                );
+            }
 
-        for (const pack of filtered) {
             children.push(
-                Pressable({
-                    onPress: (_p: Player) => {
-                        const manager: any = (this.props as any).managerEntity;
-                        if (manager) {
-                            this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
-                                playerName,
-                                packId: pack.packId,
-                                cost: pack.cost,
-                            });
-                        }
-                    },
+                View({
+                    children: packButtons,
                     style: {
+                        flexGrow: 1,
+                        overflowY: 'scroll',
                         marginBottom: 8,
-                        padding: 4,
-                        backgroundColor: 'rgba(255,255,255,0.1)',
                     },
-                    children: Text({
-                        text: `${pack.packId} - ${pack.cost} SW`,
-                        style: { fontSize: 20, color: 'cyan' },
-                    }),
+                })
+            );
+        } else {
+            children.push(
+                Text({
+                    text: 'No packs available for purchase.',
+                    style: { fontSize: 20, color: 'gray' },
                 })
             );
         }

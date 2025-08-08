@@ -42,14 +42,37 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';
         if (!player) return [];
+
         const raw = this.world.persistentStorage.getPlayerVariable<string>(player, key);
-        if (!raw) return [];
-        try {
-            const parsed = JSON.parse(raw) as Array<{ packId: string }>;
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
+        let list: Array<{ packId: string }> = [];
+        let changed = false;
+
+        if (raw) {
+            try {
+                list = JSON.parse(raw) as Array<{ packId: string }>;
+            } catch {
+                list = [];
+                changed = true;
+            }
         }
+
+        const defaults = ['MBC25-LUCKY', 'MBC25-SOMETA'];
+        for (const id of defaults) {
+            if (!list.some(p => p.packId === id)) {
+                list.push({ packId: id });
+                changed = true;
+            }
+        }
+
+        if (!raw || changed) {
+            this.world.persistentStorage.setPlayerVariable(
+                player,
+                key,
+                JSON.stringify(list)
+            );
+        }
+
+        return list;
     }
 
     /**

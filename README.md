@@ -21,7 +21,7 @@ The inventory system keeps track of which MBC25 sound packs a player has unlocke
 Defines local events used to communicate between inventory scripts and the machines. For example, `unlockMBC25` informs the inventory that a new pack was earned, and `changeActiveMBC` tells drop spawners which machine to show.
 
 ### `MBC25Inventory.ts`
-Manages per-player storage of unlocked packs using Horizon's persistent key–value store. It saves a JSON array under the key `MBC25Inventory:unlockedSoundPacks` and exposes helpers to look up players, print their inventory, and unlock new packs.
+Manages per-player storage of unlocked packs using Horizon's persistent key–value store. It saves a JSON array under the key `MBC25Inventory:unlockedSoundPacks` and exposes helpers to look up players, print their inventory, and unlock new packs. Every player now begins with the `MBC25-LUCKY` and `MBC25-SOMETA` packs unlocked by default.
 
 ### `InventorySystemUI.ts`
 Provides a simple UI listing the player's unlocked packs. Each entry is a pressable row that requests activation of that pack; another row lets the player put away the currently active machine.
@@ -37,8 +37,8 @@ A utility component for trigger zones. When a player exits the trigger it emits 
 
 ### Soundwave system
 The new soundwave point system rewards players for participating in music sessions. The `SoundwaveManager.ts` component tracks
-points over time while a machine is playing and stores the balance in persistent player data. `SoundwaveStoreUI.ts` provides a
-simple shop where players can spend their points to unlock additional beat packs. UI toasts inform listeners and performers the
+points over time while a machine is playing and stores the balance in persistent player data. `SoundwaveStoreUI.ts` presents a
+scrollable shop where players can spend their points to unlock additional beat packs. UI toasts inform listeners and performers the
 first time they begin accumulating points.
 
 ## MBC25 scripts
