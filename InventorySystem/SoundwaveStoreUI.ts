@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable, TextInput } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import { purchasePackWithSoundwaves, soundwaveBalanceChanged } from './shared-events-MBC25';
 
@@ -18,6 +18,11 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     searchTerm: string = '';
     balance: number = 0;
+
+    /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
+    private rerender(): void {
+        // In a full implementation this would refresh the component's view.
+    }
 
     private readonly STORE_PACKS = [
         { packId: 'MBC25-LUCKY', cost: 10 },
