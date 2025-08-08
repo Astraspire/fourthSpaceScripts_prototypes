@@ -79,9 +79,17 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
 
     /** Award points every minute to active players. */
     private awardPoints = () => {
+        // Log each tick so we can verify the cadence of the award cycle and
+        // whether the machine is considered "playing".
+        console.log(
+            `[Soundwave] awardPoints tick - machinePlaying=${this.machinePlaying}`
+        );
         if (!this.machinePlaying) return;
         const players = this.world.getPlayers();
         const active = players.filter(p => !this.afkPlayers.has(p.name.get()));
+        console.log(
+            `[Soundwave] active listeners this tick: ${active.length} / ${players.length}`
+        );
 
         // Everyone listening earns one point per minute.
         for (const p of active) {
@@ -154,6 +162,16 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
             this.machinePlaying = isPlaying;
             console.log(`[Soundwave] machine is now ${isPlaying ? 'playing' : 'stopped'}.`);
+            // Notify all players so we can immediately see when active listening starts
+            // or stops, providing feedback similar to a simple toast UI.
+            for (const p of this.world.getPlayers()) {
+                this.showNotification(p, {
+                    text: isPlaying
+                        ? 'Active listening started!'
+                        : 'Active listening paused.',
+                    position: { horizontal: 'left', vertical: 'top' },
+                });
+            }
         });
 
         // Listen for performer changes.
