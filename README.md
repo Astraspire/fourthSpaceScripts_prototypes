@@ -38,8 +38,9 @@ A utility component for trigger zones. When a player exits the trigger it emits 
 ### Soundwave system
 The new soundwave point system rewards players for participating in music sessions. The `SoundwaveManager.ts` component tracks
 points over time while a machine is playing and stores the balance in persistent player data. `SoundwaveStoreUI.ts` presents a
-scrollable shop where players can spend their points to unlock additional beat packs. UI toasts inform listeners and performers the
-first time they begin accumulating points.
+scrollable shop where players can spend their points to unlock additional beat packs. `SoundwaveStoreTrigger.ts` can be placed on
+a trigger volume to pop open the store when a player approaches, hiding it again when they leave. A low-cost `MBC25-TEST` pack is
+included for exercising the credit flow. UI toasts inform listeners and performers the first time they begin accumulating points.
 
 ## MBC25 scripts
 
