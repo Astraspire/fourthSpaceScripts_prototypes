@@ -87,6 +87,12 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         for (const p of active) {
             const newBal = this.getBalance(p) + 1;
             this.setBalance(p, newBal);
+            // Log and notify each increment so we can verify accumulation.
+            console.log(`[Soundwave] ${p.name.get()} earned 1 point (total: ${newBal}).`);
+            this.showNotification(p, {
+                text: `+1 soundwave (total ${newBal})`,
+                position: { horizontal: 'left', vertical: 'top' },
+            });
             if (!this.listenerToastShown.has(p.name.get())) {
                 this.listenerToastShown.add(p.name.get());
                 this.showListenerToast(p);
@@ -101,6 +107,11 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
                 if (listeners > 0) {
                     const newBal = this.getBalance(performer) + listeners;
                     this.setBalance(performer, newBal);
+                    console.log(`[Soundwave] ${performer.name.get()} earned ${listeners} bonus point(s) (total: ${newBal}).`);
+                    this.showNotification(performer, {
+                        text: `+${listeners} soundwave${listeners > 1 ? 's' : ''} (total ${newBal})`,
+                        position: { horizontal: 'left', vertical: 'bottom' },
+                    });
                 }
                 if (!this.performerToastShown.has(this.currentPerformer)) {
                     this.performerToastShown.add(this.currentPerformer);
@@ -139,15 +150,10 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
             (p: Player) => this.afkPlayers.delete(p.name.get())
         );
 
-        // Listen for machine play state.
-        this.connectLocalBroadcastEvent(
-            machinePlayState,
-            (payload: { isPlaying: boolean }) => {
-                this.machinePlaying = payload.isPlaying;
-            }
-        );
+        // Listen for machine play state and log changes.
         this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
             this.machinePlaying = isPlaying;
+            console.log(`[Soundwave] machine is now ${isPlaying ? 'playing' : 'stopped'}.`);
         });
 
         // Listen for performer changes.

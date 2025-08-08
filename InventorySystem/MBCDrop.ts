@@ -34,13 +34,18 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
 
     private currentRoot?: hz.Entity; // root of the machine now on the stage
     private currentKey?: string; // remember which one is up
+    private switching: boolean = false; // prevent simultaneous spawns
 
     /**
      * despawns the current machine and switches to the incoming machine instead
      */
     async switchTo(key: string | MachineKey) {
 
-        if (this.currentKey === key) return; // already active machine
+        if (this.currentKey === key || this.switching) return; // already active or busy
+
+        // mark switching and remember key immediately to avoid race conditions
+        this.switching = true;
+        this.currentKey = key;
 
         // despawn previous machine (if any)
         if (this.currentRoot?.exists()) {
@@ -51,6 +56,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
         const asset = this.assetFromKey(key as MachineKey);
         if (!asset) {
             console.warn(`No asset assigned for key ${key}`);
+            this.switching = false;
             return;
         }
 
@@ -64,7 +70,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
 
         // remember which machine is live
         this.currentRoot = root;
-        this.currentKey = key;
+        this.switching = false;
     }
 
     /** Helper: map enum → Asset prop */
