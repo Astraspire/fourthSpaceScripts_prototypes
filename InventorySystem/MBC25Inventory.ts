@@ -12,6 +12,7 @@ import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25, requestMBCAct
  * {@link Inventory} interface (currently just a packId string).
  */
 const SOUND_PACKS_PPV = "MBC25Inventory:unlockedSoundPacks";
+const DEFAULT_PACK_IDS = ["MBC25-LUCKY", "MBC25-SOMETA"];
 
 export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     static propsDefinition = {
@@ -40,14 +41,34 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             player,
             SOUND_PACKS_PPV
         );
-        try {
-            return raw ? (JSON.parse(raw) as Inventory[]) : [];
-        } catch {
-            // If JSON parsing fails we reset to an empty list.  This
-            // prevents runtime errors and gives players a chance to
-            // rebuild their inventory.
-            return [];
+        let list: Inventory[] = [];
+        let changed = false;
+
+        if (raw) {
+            try {
+                list = JSON.parse(raw) as Inventory[];
+            } catch {
+                list = [];
+                changed = true;
+            }
         }
+
+        for (const id of DEFAULT_PACK_IDS) {
+            if (!list.some(p => p.packId === id)) {
+                list.push({ packId: id });
+                changed = true;
+            }
+        }
+
+        if (!raw || changed) {
+            this.world.persistentStorage.setPlayerVariable(
+                player,
+                SOUND_PACKS_PPV,
+                JSON.stringify(list)
+            );
+        }
+
+        return list;
     }
 
     /**
