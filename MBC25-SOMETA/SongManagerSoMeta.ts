@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEventSoMeta, offlineColorChangeEventSoMeta, hardOfflineColorChangeEventSoMeta, playingColorChangeEventSoMeta, stopRowEventSoMeta, upcomingLoopColorChangedEventSoMeta } from './shared-events-soMeta';
+import { loopTriggerEventSoMeta, offlineColorChangeEventSoMeta, hardOfflineColorChangeEventSoMeta, playingColorChangeEventSoMeta, stopRowEventSoMeta, upcomingLoopColorChangedEventSoMeta, machinePlayState } from './shared-events-soMeta';
 
 class SongManager extends hz.Component<typeof SongManager> {
     static propsDefinition = {
@@ -46,6 +46,7 @@ class SongManager extends hz.Component<typeof SongManager> {
         }
     > = {};
     private loopDurationSec!: number;
+    private playing: boolean = false;
 
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
@@ -57,6 +58,7 @@ class SongManager extends hz.Component<typeof SongManager> {
         if (!oldLoop) return;
 
         delete this.activeLoops[channelId];
+        this.updatePlayState();
     }
 
     // stops entire channel, checks for playing loop  --> any older playing loops set to default color
@@ -80,7 +82,7 @@ class SongManager extends hz.Component<typeof SongManager> {
 
         // removes loop from active loops
         delete this.activeLoops[channelId];
-
+        this.updatePlayState();
     }
 
     override preStart() {
@@ -152,6 +154,8 @@ class SongManager extends hz.Component<typeof SongManager> {
                     gizmo: newAudio
                 };
 
+                this.updatePlayState();
+
             }
         );
 
@@ -161,6 +165,14 @@ class SongManager extends hz.Component<typeof SongManager> {
                 this.stopChannel(channelData.channelId);
             }
         );
+    }
+
+    private updatePlayState() {
+        const isPlaying = Object.keys(this.activeLoops).length > 0;
+        if (isPlaying !== this.playing) {
+            this.playing = isPlaying;
+            this.sendLocalBroadcastEvent(machinePlayState, { isPlaying });
+        }
     }
 
     override start() {
