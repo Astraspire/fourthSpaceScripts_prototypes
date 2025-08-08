@@ -139,7 +139,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                     children: packButtons,
                     style: {
                         flexGrow: 1,
-                        overflowY: 'scroll',
+                        overflow: 'visible',
                         marginBottom: 8,
                     },
                 })
