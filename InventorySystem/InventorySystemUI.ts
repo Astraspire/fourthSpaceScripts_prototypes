@@ -2,6 +2,7 @@ import * as hz from 'horizon/core';
 import { Text, Pressable, UIComponent, UINode, View } from 'horizon/ui';
 import { Entity, Player } from 'horizon/core';
 import { requestMBCActivation, relinquishMBC } from './shared-events-MBC25';
+import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
  * InventorySystem presents a simple UI listing the unlocked MBC25 packs
@@ -35,44 +36,17 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         return players.length > 0 ? players[0] : null;
     }
 
-    /**
-     * Retrieve the list of unlocked sound packs for the given player from
-     * persistent storage.  If parsing fails or the key is missing, an empty array is returned.
-     */
+    /** Retrieve unlocked packs from persistent storage as a numeric bitmask. */
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';
         if (!player) return [];
-
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(player, key);
-        let list: Array<{ packId: string }> = [];
-        let changed = false;
-
-        if (raw) {
-            try {
-                list = JSON.parse(raw) as Array<{ packId: string }>;
-            } catch {
-                list = [];
-                changed = true;
-            }
+        let mask = this.world.persistentStorage.getPlayerVariable<number>(player, key) ?? 0;
+        const updated = addDefaultPacks(mask);
+        if (updated !== mask) {
+            mask = updated;
+            this.world.persistentStorage.setPlayerVariable(player, key, mask);
         }
-
-        const defaults = ['MBC25-LUCKY', 'MBC25-SOMETA'];
-        for (const id of defaults) {
-            if (!list.some(p => p.packId === id)) {
-                list.push({ packId: id });
-                changed = true;
-            }
-        }
-
-        if (!raw || changed) {
-            this.world.persistentStorage.setPlayerVariable(
-                player,
-                key,
-                JSON.stringify(list)
-            );
-        }
-
-        return list;
+        return maskToPackList(mask);
     }
 
     /**

@@ -6,6 +6,7 @@ import {
     dropMBC,
     activePerformerChanged,
 } from './shared-events-MBC25';
+import { PACK_ID_BITS } from './PackIdBitmask';
 
 /**
  * The MBCManager component ensures that at most one MBC25 beat machine
@@ -39,30 +40,20 @@ class MBCManager extends hz.Component<typeof MBCManager> {
     private readonly SOUND_PACKS_PPV = 'MBC25Inventory:unlockedSoundPacks';
 
     /**
-     * Determine whether a given player has unlocked a specific pack.  This
-     * reads the player's persistent storage and parses the JSON array of
-     * unlocked packs.  If the player is not found or the data cannot
-     * be parsed, false is returned.
-     *
-     * @param playerName The human-readable name of the player.
-     * @param packId The identifier of the pack to check for.
+     * Determine whether a given player has unlocked a specific pack by checking
+     * the numeric bitmask stored in persistent storage.
      */
     private playerHasUnlocked(playerName: string, packId: string): boolean {
         const player = this.world
             .getPlayers()
             .find(p => p.name.get() === playerName);
         if (!player) return false;
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(
+        const mask = this.world.persistentStorage.getPlayerVariable<number>(
             player,
             this.SOUND_PACKS_PPV
-        );
-        if (!raw) return false;
-        try {
-            const list = JSON.parse(raw) as Array<{ packId: string }>;
-            return list.some(item => item.packId === packId);
-        } catch {
-            return false;
-        }
+        ) ?? 0;
+        const bit = PACK_ID_BITS[packId];
+        return bit !== undefined && (mask & bit) !== 0;
     }
 
     private forfeitControlCountdown(player: hz.Player): void {

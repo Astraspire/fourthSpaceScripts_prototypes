@@ -2,6 +2,7 @@ import * as hz from "horizon/core";
 import { Component, Player } from "horizon/core";
 import { Inventory } from "./SoundPackTypes";
 import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25, requestMBCActivation } from "./shared-events-MBC25";
+import { PACK_ID_BITS, addDefaultPacks, maskToPackList } from "./PackIdBitmask";
 
 /**
  * The key used to store per‑player state in persistent storage.
@@ -12,7 +13,6 @@ import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25, requestMBCAct
  * {@link Inventory} interface (currently just a packId string).
  */
 const SOUND_PACKS_PPV = "MBC25Inventory:unlockedSoundPacks";
-const DEFAULT_PACK_IDS = ["MBC25-LUCKY", "MBC25-SOMETA"];
 
 export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     static propsDefinition = {
@@ -24,51 +24,27 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     // sets and stores active performer
     private activePerformer!: string;
 
-    /** 
-     * Read and parse the JSON‑encoded array of pack IDs stored for a
-     * particular player.
-     *
-     * The persistent storage returns strings.  We parse the stored
-     * JSON; if parsing fails (for example, corrupted data), we fall
-     * back to an empty array.
-     *
-     * @param player The player whose inventory we are reading.
-     * @returns An array of {@link Inventory} records representing
-     *          unlocked packs.
+    /**
+     * Retrieve the numeric bitmask of unlocked packs for a player and convert
+     * it to an array of {@link Inventory} records. Default packs are ensured to
+     * be present and the storage value is updated if necessary.
      */
     private getUnlockedPacks(player: Player): Inventory[] {
-        const raw = this.world.persistentStorage.getPlayerVariable<string>(
+        const raw = this.world.persistentStorage.getPlayerVariable<number>(
             player,
             SOUND_PACKS_PPV
         );
-        let list: Inventory[] = [];
-        let changed = false;
-
-        if (raw) {
-            try {
-                list = JSON.parse(raw) as Inventory[];
-            } catch {
-                list = [];
-                changed = true;
-            }
-        }
-
-        for (const id of DEFAULT_PACK_IDS) {
-            if (!list.some(p => p.packId === id)) {
-                list.push({ packId: id });
-                changed = true;
-            }
-        }
-
-        if (!raw || changed) {
+        let mask = raw ?? 0;
+        const updated = addDefaultPacks(mask);
+        if (updated !== mask) {
+            mask = updated;
             this.world.persistentStorage.setPlayerVariable(
                 player,
                 SOUND_PACKS_PPV,
-                JSON.stringify(list)
+                mask
             );
         }
-
-        return list;
+        return maskToPackList(mask);
     }
 
     /**
@@ -143,15 +119,18 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     private unlockSoundPack(playerName: string, packId: string): void {
         const player = this.findPlayerByName(playerName);
         if (!player) return;
-
-        const list = this.getUnlockedPacks(player);
-
-        if (!list.some(e => e.packId === packId)) {
-            list.push({ packId });
+        const bit = PACK_ID_BITS[packId];
+        if (bit === undefined) return;
+        let mask = this.world.persistentStorage.getPlayerVariable<number>(
+            player,
+            SOUND_PACKS_PPV
+        ) ?? 0;
+        if ((mask & bit) === 0) {
+            mask |= bit;
             this.world.persistentStorage.setPlayerVariable(
                 player,
                 SOUND_PACKS_PPV,
-                JSON.stringify(list)
+                mask
             );
             console.log(`${playerName} now unlocked the ${packId} pack!`);
         } else {
