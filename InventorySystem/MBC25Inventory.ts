@@ -140,7 +140,6 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
     }
 
     private resetActivePerformer(player: hz.Player): void {
-        const playerName = player.name.get();
 
         if (player.name.get() === this.activePerformer) {
             this.activePerformer = "";
@@ -169,8 +168,9 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                     )
                     // mark player who requested drop as active performer
                     this.activePerformer = requestData.playerName;
+                    console.log(`${this.activePerformer} is now the active performer.`)
                 } else {
-                    console.log(`${requestData.playerName} request to change MBC25 is denied.`)
+                    console.log(`${requestData.playerName} request to change MBC25 is denied, ${this.activePerformer} is still performing!`)
                 }
             }
         )
@@ -186,7 +186,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             }
         );
 
-        // unlocks Lucky Machine into inventory
+        // unlocks new MBC25 into inventory
         this.connectLocalEvent(
             this.entity!,
             unlockMBC25,

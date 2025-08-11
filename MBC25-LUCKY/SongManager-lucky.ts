@@ -1,7 +1,8 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEventLucky, offlineColorChangeEventLucky, hardOfflineColorChangeEventLucky, playingColorChangeEventLucky, stopRowEventLucky, upcomingLoopColorChangedEventLucky, machinePlayState } from './shared-events-lucky';
+import { loopTriggerEventLucky, offlineColorChangeEventLucky, hardOfflineColorChangeEventLucky, playingColorChangeEventLucky, stopRowEventLucky, upcomingLoopColorChangedEventLucky } from './shared-events-lucky';
+import { machinePlayState } from './shared-events-MBC25';
 
-class SongManager extends hz.Component<typeof SongManager> {
+class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
     static propsDefinition = {
         chan1Loop1: { type: hz.PropTypes.Entity },
         chan1Loop2: { type: hz.PropTypes.Entity },
@@ -46,7 +47,6 @@ class SongManager extends hz.Component<typeof SongManager> {
         }
     > = {};
     private loopDurationSec!: number;
-    private playing: boolean = false;
 
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
@@ -58,7 +58,6 @@ class SongManager extends hz.Component<typeof SongManager> {
         if (!oldLoop) return;
 
         delete this.activeLoops[channelId];
-        this.updatePlayState();
     }
 
     // stops entire channel, checks for playing loop  --> any older playing loops set to default color
@@ -82,10 +81,10 @@ class SongManager extends hz.Component<typeof SongManager> {
 
         // removes loop from active loops
         delete this.activeLoops[channelId];
-        this.updatePlayState();
+
     }
 
-    override preStart() {
+    preStart() {
         // maps all audio gizmos to the channel grid
         this.channelLoops = [
             [this.props.chan1Loop1!.as(hz.AudioGizmo), this.props.chan1Loop2!.as(hz.AudioGizmo), this.props.chan1Loop3!.as(hz.AudioGizmo), this.props.chan1Loop4!.as(hz.AudioGizmo), this.props.chan1Loop5!.as(hz.AudioGizmo)],
@@ -152,8 +151,6 @@ class SongManager extends hz.Component<typeof SongManager> {
                     loopSectionId: loopData.loopSectionId,
                     gizmo: newAudio
                 };
-
-                this.updatePlayState();
             }
         );
 
@@ -165,15 +162,7 @@ class SongManager extends hz.Component<typeof SongManager> {
         );
     }
 
-    private updatePlayState() {
-        const isPlaying = Object.keys(this.activeLoops).length > 0;
-        if (isPlaying !== this.playing) {
-            this.playing = isPlaying;
-            this.sendLocalBroadcastEvent(machinePlayState, { isPlaying });
-        }
-    }
-
-    override start() {
+    start() {
 
         const interval = (this.loopDurationSec) * 1000; // converts to ms
 
@@ -200,6 +189,13 @@ class SongManager extends hz.Component<typeof SongManager> {
                 gizmo.play();
             });
         }, interval);
+
+        if (this.activeLoops) {
+            this.sendLocalBroadcastEvent(
+                machinePlayState,
+                { isPlaying: true }
+            );
+        };
     }
 }
-hz.Component.register(SongManager);
+hz.Component.register(SongManagerLucky);

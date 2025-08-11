@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable, Binding } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import {
     purchasePackWithSoundwaves,
@@ -24,16 +24,12 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     balance: number = 0;
 
-    /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
-    private rerender(): void {
-        // In a full implementation this would refresh the component's view.
-    }
-
     private readonly STORE_PACKS = [
-        { packId: 'MBC25-LUCKY', cost: 10 },
-        { packId: 'MBC25-SOMETA', cost: 20 },
-        // Low-cost test machine to exercise the soundwave credit system
-        { packId: 'MBC25-TEST', cost: 1 },
+        { packId: 'MBC25-SOMETA', cost: 0 },
+        { packId: 'MBC25-LUCKY', cost: 5 },
+        //  Test Machines to exercise the soundwave credit system
+        { packId: 'MBC25-TEST-2', cost: 10 },
+        { packId: 'MBC25-TEST-3', cost: 20 },
     ];
 
     private getCurrentPlayer(): Player | null {
@@ -56,13 +52,12 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === payload.playerName) {
                     this.balance = payload.balance;
-                    this.rerender();
                 }
+                this.initializeUI();
             }
         );
 
     }
-     
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';

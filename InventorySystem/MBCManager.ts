@@ -5,6 +5,7 @@ import {
     relinquishMBC,
     dropMBC,
     activePerformerChanged,
+    machinePlayState
 } from './shared-events-MBC25';
 import { PACK_ID_BITS } from './PackIdBitmask';
 
@@ -133,19 +134,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     this.controllingPlayer = null;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId: '' });
                     this.sendLocalBroadcastEvent(activePerformerChanged, { playerName: null });
-                }
-            }
-        );
-
-        // Automatically drop newly unlocked packs when no machine is active.
-        this.connectLocalBroadcastEvent(
-            dropMBC,
-            ({ packId }) => {
-                if (!this.activePack) {
-                    this.activePack = packId;
-                    this.controllingPlayer = null;
-                    this.sendLocalBroadcastEvent(changeActiveMBC, { packId });
-                    this.sendLocalBroadcastEvent(activePerformerChanged, { playerName: null });
+                    this.sendLocalBroadcastEvent(machinePlayState, { isPlaying: false });
                 }
             }
         );

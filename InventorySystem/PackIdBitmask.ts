@@ -12,7 +12,7 @@ export const PACK_ID_BITS: Record<string, number> = {
 };
 
 /** Default packs that should always be unlocked for players. */
-export const DEFAULT_PACK_IDS = ['MBC25-LUCKY', 'MBC25-SOMETA'];
+export const DEFAULT_PACK_IDS = ['MBC25-SOMETA'];
 
 /** Convert a bitmask value into a list of packId records. */
 export function maskToPackList(mask: number): Array<{ packId: string }> {

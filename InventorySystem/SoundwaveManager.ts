@@ -17,7 +17,7 @@ import {
  */
 export default class SoundwaveManager extends hz.Component<typeof SoundwaveManager> {
     static propsDefinition = {
-        // No properties required.
+        InventoryManager: { type: hz.PropTypes.Entity },
     };
 
     /** Persistent storage key for a player's soundwave balance. */
@@ -142,7 +142,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         }
         this.setBalance(player, balance - cost);
         // Unlock the purchased pack for the player.
-        this.sendLocalEvent(this.entity!, unlockMBC25, { playerName, packId });
+        this.sendLocalEvent(this.props.InventoryManager!, unlockMBC25, { playerName, packId });
     };
 
     preStart() {
@@ -161,7 +161,10 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
         // Listen for machine play state and log changes.
         this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
             this.machinePlaying = isPlaying;
-            console.log(`[Soundwave] machine is now ${isPlaying ? 'playing' : 'stopped'}.`);
+            if (this.machinePlaying = true) {
+                this.awardPoints();
+            }
+            console.log(`MBC25 machine is now ${isPlaying ? 'playing' : 'stopped'}.`);
             // Notify all players so we can immediately see when active listening starts
             // or stops, providing feedback similar to a simple toast UI.
             for (const p of this.world.getPlayers()) {
@@ -172,6 +175,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
                     position: { horizontal: 'left', vertical: 'top' },
                 });
             }
+            
         });
 
         // Listen for performer changes.

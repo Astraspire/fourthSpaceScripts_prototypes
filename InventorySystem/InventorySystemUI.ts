@@ -1,7 +1,7 @@
 import * as hz from 'horizon/core';
 import { Text, Pressable, UIComponent, UINode, View } from 'horizon/ui';
 import { Entity, Player } from 'horizon/core';
-import { requestMBCActivation, relinquishMBC } from './shared-events-MBC25';
+import { requestMBCActivation, relinquishMBC, purchasePackWithSoundwaves } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -30,6 +30,11 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
+    /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
+    private rerender(): void {
+        // In a full implementation this would refresh the component's view.
+    }
+
     /** Return the first connected player as the current UI owner. */
     private getCurrentPlayer(): Player | null {
         const players = this.world.getPlayers();
@@ -47,6 +52,15 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
             this.world.persistentStorage.setPlayerVariable(player, key, mask);
         }
         return maskToPackList(mask);
+    }
+
+    override preStart() {
+        // Update UI when new MBC25 added to inventory.
+        this.connectLocalBroadcastEvent(
+            purchasePackWithSoundwaves,
+            this.initializeUI
+        );
+
     }
 
     /**
