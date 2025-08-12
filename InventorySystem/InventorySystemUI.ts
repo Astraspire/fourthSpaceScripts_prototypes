@@ -1,7 +1,7 @@
 import * as hz from 'horizon/core';
 import { Text, Pressable, UIComponent, UINode, View } from 'horizon/ui';
 import { Entity, Player } from 'horizon/core';
-import { requestMBCActivation, relinquishMBC, purchasePackWithSoundwaves } from './shared-events-MBC25';
+import { requestMBCActivation, relinquishMBC, inventoryUpdated } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -30,9 +30,13 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
-    /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
+    /**
+     * Trigger a rebuild of the UI.  Horizon's UI framework doesn't provide a
+     * built in state system, so we simply recreate the root view whenever the
+     * underlying inventory data changes.
+     */
     private rerender(): void {
-        // In a full implementation this would refresh the component's view.
+        this.setRootView(this.initializeUI());
     }
 
     /** Return the first connected player as the current UI owner. */
@@ -55,10 +59,15 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
     }
 
     override preStart() {
-        // Update UI when new MBC25 added to inventory.
+        // Update UI whenever the player's inventory changes (e.g. after purchases).
         this.connectLocalBroadcastEvent(
-            purchasePackWithSoundwaves,
-            this.initializeUI
+            inventoryUpdated,
+            ({ playerName }) => {
+                const player = this.getCurrentPlayer();
+                if (player && player.name.get() === playerName) {
+                    this.rerender();
+                }
+            }
         );
 
     }

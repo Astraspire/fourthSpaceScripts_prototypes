@@ -1,7 +1,7 @@
 import * as hz from "horizon/core";
 import { Component, Player } from "horizon/core";
 import { Inventory } from "./SoundPackTypes";
-import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25, requestMBCActivation } from "./shared-events-MBC25";
+import { changeActiveMBC, checkMBCInventory, dropMBC, unlockMBC25, requestMBCActivation, inventoryUpdated } from "./shared-events-MBC25";
 import { PACK_ID_BITS, addDefaultPacks, maskToPackList } from "./PackIdBitmask";
 
 /**
@@ -133,6 +133,8 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
                 mask
             );
             console.log(`${playerName} now unlocked the ${packId} pack!`);
+            // Notify UIs that the inventory has changed so they can refresh.
+            this.sendLocalBroadcastEvent(inventoryUpdated, { playerName });
         } else {
             console.log(`${playerName} already owns the ${packId} pack.`);
         }
