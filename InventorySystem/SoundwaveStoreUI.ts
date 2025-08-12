@@ -113,6 +113,9 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
+        // Ensure the bindings reflect the current balance and available packs
+        // before constructing the view so the panel shows up populated.
+        this.refreshStoreList();
         return View({
             children: [
                 Text({
