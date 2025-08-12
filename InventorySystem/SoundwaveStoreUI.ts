@@ -128,16 +128,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         }
 
         if (packButtons.length > 0) {
-            this.storeList = [
-                View({
-                    children: packButtons,
-                    style: {
-                        marginBottom: 8,
-                        padding: 4,
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                    },
-                }),
-            ];
+            this.storeList = packButtons;
         } else {
             this.storeList = [
                 Text({
