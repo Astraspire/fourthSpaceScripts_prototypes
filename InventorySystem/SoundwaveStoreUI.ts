@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable, DynamicList, Binding } from 'horizon/ui';
 import { Player } from 'horizon/core';
 import { purchasePackWithSoundwaves, soundwaveBalanceChanged, inventoryUpdated } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
@@ -18,17 +18,16 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     panelHeight = 400;
 
     /** Tracks the player's current soundwave balance. */
-    balance: number = 0;
+    private balance: number = 0;
 
-    /** Current list of purchasable pack UI nodes. */
-    private storeList: UINode[] = [];
+    /** Binding used to display the player's balance. */
+    private balanceText = new Binding<string>('Soundwaves: 0');
 
-    /** Trigger a rebuild of the UI using the latest state. */
-    private rerender(): void {
-        // Cast to any because setRootView isn't declared in the UIComponent
-        // TypeScript typings even though it's available at runtime.
-        (this as any).setRootView(this.initializeUI());
-    }
+    /** Binding containing the list of purchasable packs. */
+    private storeData = new Binding<Array<{ packId: string; cost: number }>>([]);
+
+    /** Message shown when no packs are available. */
+    private emptyMessage = new Binding<string>('');
 
     private readonly STORE_PACKS = [
         { packId: 'MBC25-SOMETA', cost: 0 },
@@ -59,7 +58,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 if (player && player.name.get() === payload.playerName) {
                     this.balance = payload.balance;
                     // Rebuild the purchasable list in case a pack was bought.
-                    this.refreshStoreList(true);
+                    this.refreshStoreList();
                 }
             }
         );
@@ -70,7 +69,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             ({ playerName }) => {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === playerName) {
-                    this.refreshStoreList(true);
+                    this.refreshStoreList();
                 }
             }
         );
@@ -89,72 +88,69 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     }
 
     /**
-     * Helper that rebuilds the list of purchasable packs and optionally
-     * triggers a UI rerender so changes are shown immediately.
+     * Helper that rebuilds the list of purchasable packs and updates bindings
+     * so changes are shown immediately.
      */
-    private refreshStoreList(triggerRerender: boolean = false): void {
+    private refreshStoreList(): void {
         const player = this.getCurrentPlayer();
-        const playerName = player ? player.name.get() : '';
         this.balance = this.getBalance(player);
+        this.balanceText.set(`Soundwaves: ${this.balance}`);
 
         const owned = this.getUnlockedPacks(player).map(p => p.packId);
         const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
 
-        const packButtons: UINode[] = [];
-        for (const pack of available) {
-            packButtons.push(
-                Pressable({
-                    onPress: (_p: Player) => {
-                        const manager: any = (this.props as any).managerEntity;
-                        if (manager) {
-                            this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
-                                playerName,
-                                packId: pack.packId,
-                                cost: pack.cost,
-                            });
-                        }
-                    },
-                    style: {
-                        marginBottom: 8,
-                        padding: 4,
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                    },
-                    children: Text({
-                        text: `${pack.packId} - ${pack.cost} SW`,
-                        style: { fontSize: 20, color: 'cyan' },
-                    }),
-                })
-            );
-        }
-
-        if (packButtons.length > 0) {
-            this.storeList = packButtons;
+        if (available.length > 0) {
+            this.storeData.set(available);
+            this.emptyMessage.set('');
         } else {
-            this.storeList = [
-                Text({
-                    text: 'No packs available for purchase.',
-                    style: { fontSize: 20, color: 'gray' },
-                }),
-            ];
-        }
-
-        if (triggerRerender) {
-            this.rerender();
+            this.storeData.set([]);
+            this.emptyMessage.set('No packs available for purchase.');
         }
     }
 
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
-        // Populate the balance and list for the initial render.
-
+        // Ensure the bindings reflect the current balance and available packs
+        // before constructing the view so the panel shows up populated.
         this.refreshStoreList();
         return View({
             children: [
                 Text({
-                    text: `Soundwaves: ${this.balance}`,
+                    text: this.balanceText,
                     style: { fontSize: 22, color: 'white', marginBottom: 8 },
                 }),
-                View({ children: this.storeList, style: { flexGrow: 1 } }),
+                DynamicList({
+                    data: this.storeData,
+                    renderItem: (pack) => {
+                        const playerName = this.getCurrentPlayer()?.name.get() ?? '';
+                        return Pressable({
+                            onPress: (_p: Player) => {
+                                const manager: any = (this.props as any).managerEntity;
+                                if (manager) {
+                                    this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
+                                        playerName,
+                                        packId: pack.packId,
+                                        cost: pack.cost,
+                                    });
+                                }
+                            },
+                            style: {
+                                marginBottom: 8,
+                                padding: 4,
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                            },
+                            children: Text({
+                                text: `${pack.packId} - ${pack.cost} SW`,
+                                style: { fontSize: 20, color: 'cyan' },
+                            }),
+                        });
+                    },
+                    style: { flexGrow: 1 },
+                }),
+                Text({
+                    text: this.emptyMessage,
+                    style: { fontSize: 20, color: 'gray' },
+                }),
             ],
             style: {
                 backgroundColor: 'black',
