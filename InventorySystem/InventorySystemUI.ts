@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { Text, Pressable, UIComponent, UINode, View } from 'horizon/ui';
+import { Text, Pressable, UIComponent, UINode, View, DynamicList, Binding } from 'horizon/ui';
 import { Entity, Player } from 'horizon/core';
 import { requestMBCActivation, relinquishMBC, inventoryUpdated } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
@@ -30,17 +30,11 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
-    /**
-     * Trigger a rebuild of the UI.  Horizon's UI framework doesn't provide a
-     * built in state system, so we simply recreate the root view whenever the
-     * underlying inventory data changes.
-     */
-    private rerender(): void {
-        // The UIComponent base type doesn't expose setRootView in its
-        // TypeScript definition, but it exists at runtime. Cast to any so
-        // we can rebuild the root view when the inventory changes.
-        (this as any).setRootView(this.initializeUI());
-    }
+    /** Binding containing the list of unlocked packs. */
+    private packData = new Binding<Array<{ packId: string }>>([]);
+
+    /** Message shown when no packs are unlocked. */
+    private emptyMessage = new Binding<string>('');
 
     /** Return the first connected player as the current UI owner. */
     private getCurrentPlayer(): Player | null {
@@ -68,11 +62,24 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
             ({ playerName }) => {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === playerName) {
-                    this.rerender();
+                    this.refreshInventory();
                 }
             }
         );
 
+    }
+
+    /** Refresh the inventory list bindings. */
+    private refreshInventory(): void {
+        const player = this.getCurrentPlayer();
+        const packs = this.getUnlockedPacks(player);
+        if (packs.length > 0) {
+            this.packData.set(packs);
+            this.emptyMessage.set('');
+        } else {
+            this.packData.set([]);
+            this.emptyMessage.set('No MBC25 packs unlocked.');
+        }
     }
 
     /**
@@ -84,86 +91,75 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
      * the active machine by sending a relinquishMBC event.
      */
     initializeUI(): UINode {
-        const player = this.getCurrentPlayer();
-        const playerName = player ? player.name.get() : '';
-        const packs = this.getUnlockedPacks(player);
-
-        const children: UINode[] = [];
-
-        // Create a Pressable row for each unlocked pack.
-        if (packs.length > 0) {
-            for (const item of packs) {
-                const packId = item.packId;
-                children.push(
-                    Pressable({
-                        onPress: (_player) => {
-                            const manager: any = (this.props as any).managerEntity;
-                            if (manager) {
-                                this.sendLocalEvent(
-                                    manager,
-                                    requestMBCActivation,
-                                    { playerName, packId }
-                                );
-                            }
-                        },
-                        style: {
-                            marginBottom: 8,
-                            padding: 4,
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                        },
-                        children: Text({
-                            text: `Load ${packId} pack`,
-                            style: {
-                                fontSize: 22,
-                                color: 'green',
-                            },
-                        }),
-                    })
-                );
-            }
-        } else {
-            children.push(
+        this.refreshInventory();
+        return View({
+            children: [
                 Text({
-                    text: 'No MBC25 packs unlocked.',
+                    text: this.emptyMessage,
                     style: {
                         fontSize: 18,
                         color: 'white',
                         marginBottom: 8,
                     },
-                })
-            );
-        }
-
-        // Add a Pressable row to relinquish control of the active machine.
-        children.push(
-            Pressable({
-                onPress: (_player) => {
-                    const manager: any = (this.props as any).managerEntity;
-                    if (manager) {
-                        this.sendLocalEvent(
-                            manager,
-                            relinquishMBC,
-                            { playerName }
-                        );
-                    }
-                },
-                style: {
-                    marginTop: 16,
-                    padding: 4,
-                    backgroundColor: 'rgba(255,0,0,0.2)',
-                },
-                children: Text({
-                    text: 'Put away your MBC25',
-                    style: {
-                        fontSize: 20,
-                        color: 'red',
-                    },
                 }),
-            })
-        );
-
-        return View({
-            children,
+                DynamicList({
+                    data: this.packData,
+                    renderItem: (item) => {
+                        const packId = item.packId;
+                        const playerName = this.getCurrentPlayer()?.name.get() ?? '';
+                        return Pressable({
+                            onPress: (_player) => {
+                                const manager: any = (this.props as any).managerEntity;
+                                if (manager) {
+                                    this.sendLocalEvent(
+                                        manager,
+                                        requestMBCActivation,
+                                        { playerName, packId }
+                                    );
+                                }
+                            },
+                            style: {
+                                marginBottom: 8,
+                                padding: 4,
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                            },
+                            children: Text({
+                                text: `Load ${packId} pack`,
+                                style: {
+                                    fontSize: 22,
+                                    color: 'green',
+                                },
+                            }),
+                        });
+                    },
+                    style: { flexGrow: 1 },
+                }),
+                Pressable({
+                    onPress: (_player) => {
+                        const playerName = this.getCurrentPlayer()?.name.get() ?? '';
+                        const manager: any = (this.props as any).managerEntity;
+                        if (manager) {
+                            this.sendLocalEvent(
+                                manager,
+                                relinquishMBC,
+                                { playerName }
+                            );
+                        }
+                    },
+                    style: {
+                        marginTop: 16,
+                        padding: 4,
+                        backgroundColor: 'rgba(255,0,0,0.2)',
+                    },
+                    children: Text({
+                        text: 'Put away your MBC25',
+                        style: {
+                            fontSize: 20,
+                            color: 'red',
+                        },
+                    }),
+                }),
+            ],
             style: {
                 backgroundColor: 'black',
                 height: this.panelHeight,
