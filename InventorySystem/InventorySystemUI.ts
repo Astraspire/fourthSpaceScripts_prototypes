@@ -36,7 +36,10 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
      * underlying inventory data changes.
      */
     private rerender(): void {
-        this.setRootView(this.initializeUI());
+        // The UIComponent base type doesn't expose setRootView in its
+        // TypeScript definition, but it exists at runtime. Cast to any so
+        // we can rebuild the root view when the inventory changes.
+        (this as any).setRootView(this.initializeUI());
     }
 
     /** Return the first connected player as the current UI owner. */
