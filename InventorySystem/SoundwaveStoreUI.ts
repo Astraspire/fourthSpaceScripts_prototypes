@@ -73,6 +73,9 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 }
             }
         );
+
+        // Populate the initial balance and store list once the component starts.
+        this.refreshStoreList();
     }
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
@@ -110,9 +113,6 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
-        // Populate the balance and list for the initial render.
-
-        this.refreshStoreList();
         return View({
             children: [
                 Text({
