@@ -108,7 +108,11 @@ class MBCManager extends hz.Component<typeof MBCManager> {
                     return;
                 }
                 // if active performer wants to change pack then broadcast change event
-                if (!this.activePack || this.controllingPlayer === "null" || this.controllingPlayer === playerName) {
+                if (
+                    !this.activePack ||
+                    this.controllingPlayer === null ||
+                    this.controllingPlayer === playerName
+                ) {
                     this.activePack = packId;
                     this.controllingPlayer = playerName;
                     this.sendLocalBroadcastEvent(changeActiveMBC, { packId });

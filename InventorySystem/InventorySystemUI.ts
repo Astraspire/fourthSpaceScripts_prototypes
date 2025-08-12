@@ -30,9 +30,13 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         managerEntity: { type: hz.PropTypes.Entity },
     };
 
-    /** Trigger a rebuild of the UI. Placeholder until framework support exists. */
+    /**
+     * Trigger a rebuild of the UI.  Horizon's UI framework doesn't provide a
+     * built in state system, so we simply recreate the root view whenever the
+     * underlying inventory data changes.
+     */
     private rerender(): void {
-        // In a full implementation this would refresh the component's view.
+        this.setRootView(this.initializeUI());
     }
 
     /** Return the first connected player as the current UI owner. */
@@ -58,7 +62,7 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
         // Update UI when new MBC25 added to inventory.
         this.connectLocalBroadcastEvent(
             purchasePackWithSoundwaves,
-            this.initializeUI
+            () => this.rerender()
         );
 
     }
