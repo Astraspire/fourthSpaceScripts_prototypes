@@ -19,6 +19,11 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     /** Tracks the player's current soundwave balance. */
     balance: number = 0;
+    /** Binding used so the balance text automatically updates on change. */
+    private balanceBinding = new Binding<string>('Soundwaves: 0');
+
+    /** Binding containing the current list of purchasable pack buttons. */
+    private storeListBinding = new Binding<UINode[]>([]);
 
     /** Current list of purchasable pack UI nodes. */
     private storeList: UINode[] = [];
@@ -130,9 +135,9 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 View({
                     children: packButtons,
                     style: {
-                        flexGrow: 1,
-                        overflow: 'visible',
                         marginBottom: 8,
+                        padding: 4,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
                     },
                 }),
             ];
@@ -144,7 +149,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 }),
             ];
         }
-
+    }
         if (triggerRerender) {
             this.rerender();
         }
@@ -153,6 +158,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
         // Populate the balance and list for the initial render.
+
         this.refreshStoreList();
         return View({
             children: [
