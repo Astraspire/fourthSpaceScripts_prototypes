@@ -22,7 +22,13 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     panelWidth = 500;
     panelHeight = 400;
 
+    /** Tracks the player's current soundwave balance. */
     balance: number = 0;
+    /** Binding used so the balance text automatically updates on change. */
+    private balanceBinding = new Binding<string>('Soundwaves: 0');
+
+    /** Binding containing the current list of purchasable pack buttons. */
+    private storeListBinding = new Binding<UINode[]>([]);
 
     private readonly STORE_PACKS = [
         { packId: 'MBC25-SOMETA', cost: 0 },
@@ -52,11 +58,14 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === payload.playerName) {
                     this.balance = payload.balance;
+                    this.balanceBinding.set(`Soundwaves: ${this.balance}`);
+                    // Rebuild the purchasable list in case a pack was bought.
+                    this.refreshStoreList();
                 }
-                this.initializeUI();
             }
         );
-
+        // Ensure the bindings are initialised for the initial render.
+        this.refreshStoreList();
     }
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
@@ -71,71 +80,76 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         return maskToPackList(mask);
     }
 
-    initializeUI(): UINode {
+    /**
+     * Helper that rebuilds the list of purchasable packs and pushes the
+     * resulting UI nodes to the storeListBinding.
+     */
+    private refreshStoreList(): void {
         const player = this.getCurrentPlayer();
         const playerName = player ? player.name.get() : '';
         this.balance = this.getBalance(player);
+        this.balanceBinding.set(`Soundwaves: ${this.balance}`);
+
         const owned = this.getUnlockedPacks(player).map(p => p.packId);
         const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
 
-        const children: UINode[] = [];
-
-        children.push(
-            Text({
-                text: `Soundwaves: ${this.balance}`,
-                style: { fontSize: 22, color: 'white', marginBottom: 8 },
-            })
-        );
-
-        if (available.length > 0) {
-            const packButtons: UINode[] = [];
-            for (const pack of available) {
-                packButtons.push(
-                    Pressable({
-                        onPress: (_p: Player) => {
-                            const manager: any = (this.props as any).managerEntity;
-                            if (manager) {
-                                this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
-                                    playerName,
-                                    packId: pack.packId,
-                                    cost: pack.cost,
-                                });
-                            }
-                        },
-                        style: {
-                            marginBottom: 8,
-                            padding: 4,
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                        },
-                        children: Text({
-                            text: `${pack.packId} - ${pack.cost} SW`,
-                            style: { fontSize: 20, color: 'cyan' },
-                        }),
-                    })
-                );
-            }
-
-            children.push(
-                View({
-                    children: packButtons,
-                    style: {
-                        flexGrow: 1,
-                        overflow: 'visible',
-                        marginBottom: 8,
+        const packButtons: UINode[] = [];
+        for (const pack of available) {
+            packButtons.push(
+                Pressable({
+                    onPress: (_p: Player) => {
+                        const manager: any = (this.props as any).managerEntity;
+                        if (manager) {
+                            this.sendLocalEvent(manager, purchasePackWithSoundwaves, {
+                                playerName,
+                                packId: pack.packId,
+                                cost: pack.cost,
+                            });
+                        }
                     },
-                })
-            );
-        } else {
-            children.push(
-                Text({
-                    text: 'No packs available for purchase.',
-                    style: { fontSize: 20, color: 'gray' },
+                    style: {
+                        marginBottom: 8,
+                        padding: 4,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                    children: Text({
+                        text: `${pack.packId} - ${pack.cost} SW`,
+                        style: { fontSize: 20, color: 'cyan' },
+                    }),
                 })
             );
         }
 
+        if (packButtons.length > 0) {
+            this.storeListBinding.set([View({
+                children: packButtons,
+                style: {
+                    flexGrow: 1,
+                    overflow: 'visible',
+                    marginBottom: 8,
+                },
+            })]);
+        } else {
+            this.storeListBinding.set([
+                Text({
+                    text: 'No packs available for purchase.',
+                    style: { fontSize: 20, color: 'gray' },
+                }),
+            ]);
+        }
+    }
+
+    /** Build the initial root view for the store UI. */
+    initializeUI(): UINode {
+        this.refreshStoreList();
         return View({
-            children,
+            children: [
+                Text({
+                    text: this.balanceBinding,
+                    style: { fontSize: 22, color: 'white', marginBottom: 8 },
+                }),
+                View({ children: this.storeListBinding, style: { flexGrow: 1 } }),
+            ],
             style: {
                 backgroundColor: 'black',
                 padding: 12,
