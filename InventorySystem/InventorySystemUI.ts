@@ -1,7 +1,7 @@
 import * as hz from 'horizon/core';
 import { Text, Pressable, UIComponent, UINode, View } from 'horizon/ui';
 import { Entity, Player } from 'horizon/core';
-import { requestMBCActivation, relinquishMBC, purchasePackWithSoundwaves } from './shared-events-MBC25';
+import { requestMBCActivation, relinquishMBC, inventoryUpdated } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -59,10 +59,15 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
     }
 
     override preStart() {
-        // Update UI when new MBC25 added to inventory.
+        // Update UI whenever the player's inventory changes (e.g. after purchases).
         this.connectLocalBroadcastEvent(
-            purchasePackWithSoundwaves,
-            () => this.rerender()
+            inventoryUpdated,
+            ({ playerName }) => {
+                const player = this.getCurrentPlayer();
+                if (player && player.name.get() === playerName) {
+                    this.rerender();
+                }
+            }
         );
 
     }

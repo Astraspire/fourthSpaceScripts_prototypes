@@ -41,6 +41,14 @@ export const dropMBC = new LocalEvent<{ packId: string }>(
 );
 
 /**
+ * Broadcast whenever a player's unlocked sound pack inventory changes so UIs
+ * can refresh their displays or update available options.
+ */
+export const inventoryUpdated = new LocalEvent<{ playerName: string }>(
+    'soundPackInventoryUpdated'
+);
+
+/**
  * Event raised by the UI or other gameplay systems to request that a
  * specific MBC25 machine become the sole active beat machine.  The
  * {@link MBCManager} listens for this event to coordinate which

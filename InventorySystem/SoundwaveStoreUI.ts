@@ -1,12 +1,7 @@
 import * as hz from 'horizon/core';
-import { UIComponent, UINode, View, Text, Pressable, Binding } from 'horizon/ui';
+import { UIComponent, UINode, View, Text, Pressable } from 'horizon/ui';
 import { Player } from 'horizon/core';
-import {
-    purchasePackWithSoundwaves,
-    soundwaveBalanceChanged,
-    openSoundwaveStore,
-    closeSoundwaveStore,
-} from './shared-events-MBC25';
+import { purchasePackWithSoundwaves, soundwaveBalanceChanged, inventoryUpdated } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -29,6 +24,14 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
 
     /** Binding containing the current list of purchasable pack buttons. */
     private storeListBinding = new Binding<UINode[]>([]);
+
+    /** Current list of purchasable pack UI nodes. */
+    private storeList: UINode[] = [];
+
+    /** Trigger a rebuild of the UI using the latest state. */
+    private rerender(): void {
+        this.setRootView(this.initializeUI());
+    }
 
     private readonly STORE_PACKS = [
         { packId: 'MBC25-SOMETA', cost: 0 },
@@ -58,14 +61,22 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === payload.playerName) {
                     this.balance = payload.balance;
-                    this.balanceBinding.set(`Soundwaves: ${this.balance}`);
                     // Rebuild the purchasable list in case a pack was bought.
-                    this.refreshStoreList();
+                    this.refreshStoreList(true);
                 }
             }
         );
-        // Ensure the bindings are initialised for the initial render.
-        this.refreshStoreList();
+
+        // Remove purchased packs once the inventory updates.
+        this.connectLocalBroadcastEvent(
+            inventoryUpdated,
+            ({ playerName }) => {
+                const player = this.getCurrentPlayer();
+                if (player && player.name.get() === playerName) {
+                    this.refreshStoreList(true);
+                }
+            }
+        );
     }
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
@@ -81,14 +92,13 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     }
 
     /**
-     * Helper that rebuilds the list of purchasable packs and pushes the
-     * resulting UI nodes to the storeListBinding.
+     * Helper that rebuilds the list of purchasable packs and optionally
+     * triggers a UI rerender so changes are shown immediately.
      */
-    private refreshStoreList(): void {
+    private refreshStoreList(triggerRerender: boolean = false): void {
         const player = this.getCurrentPlayer();
         const playerName = player ? player.name.get() : '';
         this.balance = this.getBalance(player);
-        this.balanceBinding.set(`Soundwaves: ${this.balance}`);
 
         const owned = this.getUnlockedPacks(player).map(p => p.packId);
         const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
@@ -121,34 +131,42 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         }
 
         if (packButtons.length > 0) {
-            this.storeListBinding.set([View({
-                children: packButtons,
-                style: {
-                    flexGrow: 1,
-                    overflow: 'visible',
-                    marginBottom: 8,
-                },
-            })]);
+            this.storeList = [
+                View({
+                    children: packButtons,
+                    style: {
+                        marginBottom: 8,
+                        padding: 4,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                }),
+            ];
         } else {
-            this.storeListBinding.set([
+            this.storeList = [
                 Text({
                     text: 'No packs available for purchase.',
                     style: { fontSize: 20, color: 'gray' },
                 }),
-            ]);
+            ];
+        }
+    }
+        if (triggerRerender) {
+            this.rerender();
         }
     }
 
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
+        // Populate the balance and list for the initial render.
+
         this.refreshStoreList();
         return View({
             children: [
                 Text({
-                    text: this.balanceBinding,
+                    text: `Soundwaves: ${this.balance}`,
                     style: { fontSize: 22, color: 'white', marginBottom: 8 },
                 }),
-                View({ children: this.storeListBinding, style: { flexGrow: 1 } }),
+                View({ children: this.storeList, style: { flexGrow: 1 } }),
             ],
             style: {
                 backgroundColor: 'black',
