@@ -122,6 +122,20 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                     text: this.balanceText,
                     style: { fontSize: 22, color: 'white', marginBottom: 8 },
                 }),
+                // Allow manual refresh in case automatic events fail to fire
+                Pressable({
+                    onPress: (_p: Player) => this.refreshStoreList(),
+                    style: {
+                        marginBottom: 8,
+                        padding: 4,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        alignSelf: 'flex-start',
+                    },
+                    children: Text({
+                        text: 'Refresh Store',
+                        style: { fontSize: 18, color: 'white' },
+                    }),
+                }),
                 DynamicList({
                     data: this.storeData,
                     renderItem: (pack) => {
