@@ -83,6 +83,18 @@ export const activePerformerChanged = new LocalEvent<{ playerName: string | null
     'activePerformerChanged'
 );
 
+
+/**
+ * Broadcast whenever the player controlling the UI system changes.
+ * Payload contains the new owner's name or null if no one owns the
+ * stroe ui.  This allows the store ui to display information for 
+ * whichever player clicks refresh last.
+ */
+export const uiOwnerChanged = new LocalEvent<{ playerName: string | null }>(
+    'activeShopperChanged'
+);
+
+
 /**
  * Event raised when a player attempts to purchase a sound pack using
  * soundwave points via the store UI.

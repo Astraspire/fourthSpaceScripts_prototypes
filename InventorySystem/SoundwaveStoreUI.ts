@@ -34,6 +34,9 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     /** Message shown when no packs are available. */
     private emptyMessage = new Binding<string>('');
 
+    /** stores the active player controlling the UI. */
+    private uiOwner: string = "";
+
     private readonly STORE_PACKS = [
         { packId: 'MBC25-SOMETA', cost: 0 },
         { packId: 'MBC25-LUCKY', cost: 5 },
@@ -55,6 +58,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
     }
 
     override preStart() {
+
         // Update balance when the manager notifies of changes.
         this.connectLocalBroadcastEvent(
             soundwaveBalanceChanged,
@@ -63,7 +67,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 if (player && player.name.get() === payload.playerName) {
                     this.balance = payload.balance;
                     // Rebuild the purchasable list in case a pack was bought.
-                    this.refreshStoreList();
+                    this.refreshStoreList(player.name.get());
                 }
             }
         );
@@ -74,7 +78,7 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             ({ playerName }) => {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === playerName) {
-                    this.refreshStoreList();
+                    this.refreshStoreList(playerName);
                 }
             }
         );
@@ -84,13 +88,14 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             this.entity!,
             openSoundwaveStore,
             ({ player }: { player: Player }) => {
+                const playerName = player.name.get();
                 // Ensure the latest balance and inventory are displayed.
-                this.refreshStoreList();
+                this.refreshStoreList(playerName);
             }
         );
 
         // Populate the initial balance and store list once the component starts.
-        this.refreshStoreList();
+        this.refreshStoreList(this.uiOwner);
     }
 
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
@@ -109,30 +114,36 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
      * Helper that rebuilds the list of purchasable packs and updates bindings
      * so changes are shown immediately.
      */
-    private refreshStoreList(): void {
-        const player = this.getCurrentPlayer();
-        const playerName = player?.name.get();
-        this.balance = this.getBalance(player);
-        
-        this.balanceText.set(`${playerName} has ` + `${this.balance} soundwaves`);
+    private refreshStoreList(playerName: string): void {
+        if (!(playerName === "")) {
+            const player = this.world.getPlayers().find(p => p.name.get() === playerName) ?? null;
+            this.balance = this.getBalance(player);
 
-        const owned = this.getUnlockedPacks(player).map(p => p.packId);
-        const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
+            this.balanceText.set(`${playerName} has ` + `${this.balance} soundwaves`);
 
-        if (available.length > 0) {
-            this.storeData.set(available);
-            this.emptyMessage.set('');
-        } else {
+            const owned = this.getUnlockedPacks(player).map(p => p.packId);
+            const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
+
+            if (available.length > 0) {
+                this.storeData.set(available);
+                this.emptyMessage.set('');
+            } else {
+                this.storeData.set([]);
+                this.emptyMessage.set('No packs available for purchase.');
+            }
+        } else if (playerName === null) {
+            this.balanceText.set(`No player in the world`);
             this.storeData.set([]);
             this.emptyMessage.set('No packs available for purchase.');
         }
+        
     }
 
     /** Build the initial root view for the store UI. */
     initializeUI(): UINode {
         // Ensure the bindings reflect the current balance and available packs
         // before constructing the view so the panel shows up populated.
-        this.refreshStoreList();
+        this.refreshStoreList(this.uiOwner);
         return View({
             children: [
                 Text({
@@ -141,8 +152,11 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
                 }),
                 // Allow manual refresh in case automatic events fail to fire
                 Pressable({
-                    onPress: (_p: Player) => this.refreshStoreList(),
-                    style: {
+                    onPress: (_p: Player) => {
+                        const playerName = _p.name.get();
+                        this.refreshStoreList(playerName);
+                    },
+                        style: {
                         marginBottom: 8,
                         padding: 4,
                         backgroundColor: 'rgba(255,255,255,0.1)',
