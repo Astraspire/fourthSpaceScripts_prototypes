@@ -113,12 +113,12 @@ export const openSoundwaveStore = new LocalEvent<{ player: Player }>(
     'openSoundwaveStoreUI'
 );
 
-/**
- * Request to close the soundwave store UI for a specific player.
- */
-export const closeSoundwaveStore = new LocalEvent<{ player: Player }>(
-    'closeSoundwaveStoreUI'
-);
+///**
+// * Request to close the soundwave store UI for a specific player.
+// */
+//export const closeSoundwaveStore = new LocalEvent<{ player: Player }>(
+//    'closeSoundwaveStoreUI'
+//);
 
 /**
  * Broadcast when the MBC25 machine starts or stops playing loops so

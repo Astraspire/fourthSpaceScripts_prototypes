@@ -65,12 +65,11 @@ class MBCManager extends hz.Component<typeof MBCManager> {
         let aborted = false;
 
         // subscribe once, set flag on AFK-exit
-        const exitSub = this.connectCodeBlockEvent(
+        this.connectCodeBlockEvent(
             this.entity!,
             hz.CodeBlockEvents.OnPlayerExitAFK,
             () => {
                 aborted = true;
-                exitSub.disconnect();
             }
         );
 

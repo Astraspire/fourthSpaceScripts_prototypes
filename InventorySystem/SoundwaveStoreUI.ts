@@ -6,7 +6,6 @@ import {
     soundwaveBalanceChanged,
     inventoryUpdated,
     openSoundwaveStore,
-    closeSoundwaveStore,
 } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
@@ -87,16 +86,6 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
             ({ player }: { player: Player }) => {
                 // Ensure the latest balance and inventory are displayed.
                 this.refreshStoreList();
-                player.worldUi.open(this.entity!);
-            }
-        );
-
-        // Hide the store UI when requested.
-        this.connectLocalEvent(
-            this.entity!,
-            closeSoundwaveStore,
-            ({ player }: { player: Player }) => {
-                player.worldUi.close(this.entity!);
             }
         );
 
@@ -122,8 +111,10 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
      */
     private refreshStoreList(): void {
         const player = this.getCurrentPlayer();
+        const playerName = player?.name.get();
         this.balance = this.getBalance(player);
-        this.balanceText.set(`Soundwaves: ${this.balance}`);
+        
+        this.balanceText.set(`${playerName} has ` + `${this.balance} soundwaves`);
 
         const owned = this.getUnlockedPacks(player).map(p => p.packId);
         const available = this.STORE_PACKS.filter(p => !owned.includes(p.packId));
