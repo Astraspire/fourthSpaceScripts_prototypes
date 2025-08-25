@@ -1,14 +1,19 @@
 import * as hz from 'horizon/core';
 import { loopTriggerEventSoMeta, offlineColorChangeEventSoMeta, hardOfflineColorChangeEventSoMeta, playingColorChangeEventSoMeta, upcomingLoopColorChangedEventSoMeta } from './shared-events-soMeta';
 
+/** Possible visual states for a loop button. */
 enum ButtonState {
     Idle,
     Upcoming,
     Playing,
 }
 
+/**
+ * Handles button presses and color state for the SoMeta machine's loop
+ * triggers.  Logic mirrors LoopButtonTrigger for Lucky.
+ */
 class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
-    // starts each button as 'idle'
+    /** Current state of the button. */
     public state = ButtonState.Idle;
 
     static propsDefinition = {
@@ -19,15 +24,15 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         originalButtonColor: { type: hz.PropTypes.Color, default: new hz.Color(1.0, 0.5, 0.0) },
         loopButton: { type: hz.PropTypes.Entity }
     };
-    // sends loopTriggerEventSoMeta with channelId and LoopSectionId
+    // Broadcast a loopTriggerEventSoMeta with the channel and loop IDs
     private startLoopPress = (): void => {
             this.sendLocalBroadcastEvent(loopTriggerEventSoMeta, ({
             channelId: this.props.channelId,
             loopSectionId: this.props.loopSectionId
-        }));  
+        }));
     }
 
-    // turns button to originalButtonColor
+    // Reset button to its original color
     private buttonOffline = (): void => {
         console.log(`checking channel ${this.props.channelId}, loop ${this.props.loopSectionId} for active status before going idle...`);
 
@@ -48,7 +53,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         this.state = ButtonState.Idle;
     }
 
-    // turns button offline color no matter what
+    // Force the button back to idle color regardless of state
     private hardOffline = (): void => {
         console.log(`Button channel ${this.props.channelId}, loop ${this.props.loopSectionId} going offline`);
 
@@ -62,7 +67,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         this.state = ButtonState.Idle;
     }
 
-    // turns button to upcomingPlaybackColor
+    // Set the button to indicate it will play on the next bar
     private buttonPrimedForPlayback = (): void => {
         console.log(`Trying to change to upcoming playback color: ${this.props.upcomingPlaybackColor}`);
 
@@ -81,7 +86,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
         this.state = ButtonState.Upcoming;
     }
 
-    // turns button to playbackColor
+    // Show the button as currently playing
     private buttonOnline = (): void => {
         console.log(`Trying to change to now playing color: ${this.props.playbackColor}`);
 
@@ -97,10 +102,10 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
 
     preStart() {
 
-        // sets color to default at start
+        // Set color to default at start
         this.buttonOffline(); 
 
-        // listen to offlineColorChangeEventSoMeta if button if correct match
+        // Return to idle color when receiving offlineColorChangeEventSoMeta
         this.connectLocalBroadcastEvent(offlineColorChangeEventSoMeta, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
@@ -112,7 +117,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
             }
         });
 
-        // listen to offlineColorChangeEventSoMeta if button if correct match
+        // Force idle color for hard resets
         this.connectLocalBroadcastEvent(hardOfflineColorChangeEventSoMeta, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
@@ -124,7 +129,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
             }
         });
 
-        // listen to playingColorChangeEventSoMeta if button is correct match
+        // Highlight as playing when receiving playingColorChangeEventSoMeta
         this.connectLocalBroadcastEvent(playingColorChangeEventSoMeta, (loopData) => {
             console.log(`Received playingColorChangeEventSoMeta on loopButton script.`);
 
@@ -138,7 +143,7 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
             }
         });
 
-        // listen to upcomingLoopColorChangedEvent if button is correct match
+        // Turn blue to indicate upcoming playback when upcomingLoopColorChangedEvent arrives
         this.connectLocalBroadcastEvent(upcomingLoopColorChangedEventSoMeta, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
@@ -150,14 +155,14 @@ class LoopButtonTrigger extends hz.Component<typeof LoopButtonTrigger> {
             }
         });
 
-        // listen to trigger loop press codeblock event
+        // Trigger loop playback when the player steps off
         this.connectCodeBlockEvent(
             this.entity,
             hz.CodeBlockEvents.OnPlayerExitTrigger,
             (this.startLoopPress)
         );
 
-        // listen to turn button blue
+        // Also color the button blue when stepped off to show it's queued
         this.connectCodeBlockEvent(
             this.entity,
             hz.CodeBlockEvents.OnPlayerExitTrigger,

@@ -1,24 +1,30 @@
 import { LocalEvent } from 'horizon/core';
 
+/** Request to stop all loops on the specified channel. */
 export const stopRowEventLucky = new LocalEvent<{ channelId: number }>(
     'sendStopCommandToRow'
 )
+/** Trigger a loop section to begin playing on a channel. */
 export const loopTriggerEventLucky = new LocalEvent<{ channelId: number, loopSectionId: number }>(
     'sendLoopTriggerEvent'
 )
 
+/** Reset a specific loop button back to its idle color. */
 export const offlineColorChangeEventLucky = new LocalEvent<{ channel: number, loopId: number }>(
     'setColorDefaultEvent'
 )
 
+/** Force a loop button to idle color regardless of current state. */
 export const hardOfflineColorChangeEventLucky = new LocalEvent<{ channel: number, loopId: number }>(
     'hardSetColorDefaultEvent'
 )
 
+/** Mark a loop button as currently playing. */
 export const playingColorChangeEventLucky = new LocalEvent<{ channel: number, loopId: number }>(
     'setColorToNowPlaying'
-) 
+)
 
+/** Highlight a loop button as queued to play on the next measure. */
 export const upcomingLoopColorChangedEventLucky = new LocalEvent<{ channel: number, loopId: number }>(
     'setColorBackToUpcoming'
 )

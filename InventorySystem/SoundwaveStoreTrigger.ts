@@ -41,7 +41,7 @@ class SoundwaveStoreTrigger extends hz.Component<typeof SoundwaveStoreTrigger> {
     }
 
     start() {
-        // necessary to run
+        // No additional initialization required.
     }
 }
 

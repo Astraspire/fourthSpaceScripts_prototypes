@@ -45,11 +45,13 @@ class SoundwaveStoreUI extends UIComponent<typeof SoundwaveStoreUI> {
         { packId: 'MBC25-TEST-3', cost: 20 },
     ];
 
+    /** Return the first connected player as the shopper interacting with the store. */
     private getCurrentPlayer(): Player | null {
         const players = this.world.getPlayers();
         return players.length > 0 ? players[0] : null;
     }
 
+    /** Look up a player's current soundwave balance from persistent storage. */
     private getBalance(player: Player | null): number {
         const key = 'SoundwaveManager:points';
         if (!player) return 0;

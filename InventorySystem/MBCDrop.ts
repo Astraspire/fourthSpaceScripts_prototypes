@@ -32,27 +32,31 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
     /** Subscription handle for the drop tween update loop. */
     private updateSub!: hz.EventSubscription;
 
-    private currentRoot?: hz.Entity; // root of the machine now on the stage
-    private currentKey?: string; // remember which one is up
-    private switching: boolean = false; // prevent simultaneous spawns
+    /** Root entity of the machine currently spawned on stage. */
+    private currentRoot?: hz.Entity;
+    /** Identifier of the currently displayed machine. */
+    private currentKey?: string;
+    /** True while a spawn/despawn cycle is in progress to prevent overlap. */
+    private switching: boolean = false;
 
     /**
-     * despawns the current machine and switches to the incoming machine instead
+     * Despawn any currently active machine and spawn the one matching the
+     * provided key.  A simple guard prevents simultaneous spawns if multiple
+     * events arrive in quick succession.
      */
     async switchTo(key: string | MachineKey) {
-
         if (this.currentKey === key || this.switching) return; // already active or busy
 
-        // mark switching and remember key immediately to avoid race conditions
+        // Remember we are mid-switch to avoid race conditions
         this.switching = true;
         this.currentKey = key;
 
-        // despawn previous machine (if any)
+        // Despawn previous machine (if any)
         if (this.currentRoot?.exists()) {
             await this.world.deleteAsset(this.currentRoot); // despawn bundle
         }
 
-        // look up asset to spawn
+        // Look up asset to spawn
         const asset = this.assetFromKey(key as MachineKey);
         if (!asset) {
             console.warn(`No asset assigned for key ${key}`);
@@ -60,7 +64,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
             return;
         }
 
-        // spawn the new machine
+        // Spawn the new machine
         const [root] = await this.world.spawnAsset(
             asset,
             this.props.stagePos,
@@ -68,7 +72,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
             this.props.stageScale,
         );
 
-        // remember which machine is live
+        // Remember which machine is live
         this.currentRoot = root;
         this.switching = false;
     }
@@ -89,6 +93,7 @@ class MBCDrop extends hz.Component<typeof MBCDrop> {
      *
      * @param packId The pack identifier to compare against this.props.packId.
      */
+    /** Triggered when a drop or changeActiveMBC event targets this pack. */
     private handleActivation(packId: string) {
         this.switchTo(packId);
     }

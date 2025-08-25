@@ -21,7 +21,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
         checkForLuckyTrigger: { type: hz.PropTypes.Entity },
     }
 
-    // sets and stores active performer
+    /** Name of the player currently performing on an active MBC25 machine. */
     private activePerformer!: string;
 
     /**
@@ -141,34 +141,36 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
 
     }
 
+    /**
+     * Clear the active performer when they leave the world so another player
+     * can claim the machine.
+     */
     private resetActivePerformer(player: hz.Player): void {
-
         if (player.name.get() === this.activePerformer) {
             this.activePerformer = "";
         }
-
     }
 
     preStart() {
-        // requests to activate or switch the active MBC25
+        // Listen for requests to activate or switch the active MBC25
         this.connectLocalEvent(
             this.entity!,
             requestMBCActivation,
             (requestData) => {
                 console.log(`${requestData.playerName} is attempting to activated MBC25 id: ${requestData.packId}.`);
                 if (requestData.playerName === this.activePerformer) {
-                    // drops MBC25 with specified packId
+                    // Drop the requested machine immediately for the performer
                     this.sendLocalBroadcastEvent(
                         dropMBC,
                         { packId: requestData.packId }
                     )
                 } else if (this.activePerformer === "") {
-                    // drops MBC25 with specified packId
+                    // No machine active – drop the requested machine
                     this.sendLocalBroadcastEvent(
                         dropMBC,
                         { packId: requestData.packId }
                     )
-                    // mark player who requested drop as active performer
+                    // Mark player who requested drop as active performer
                     this.activePerformer = requestData.playerName;
                     console.log(`${this.activePerformer} is now the active performer.`)
                 } else {
@@ -177,7 +179,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             }
         )
 
-        // checks inventory when LuckyCheck trigger is entered
+        // Print inventory contents when checkMBCInventory is received
         this.connectLocalEvent(
             this.entity!,
             checkMBCInventory,
@@ -188,7 +190,7 @@ export default class MBC25Inventory extends Component<typeof MBC25Inventory> {
             }
         );
 
-        // unlocks new MBC25 into inventory
+        // Unlock new packs when an unlockMBC25 event is received
         this.connectLocalEvent(
             this.entity!,
             unlockMBC25,

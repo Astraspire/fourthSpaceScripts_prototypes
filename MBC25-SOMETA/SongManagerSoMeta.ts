@@ -2,6 +2,10 @@ import * as hz from 'horizon/core';
 import { loopTriggerEventSoMeta, offlineColorChangeEventSoMeta, hardOfflineColorChangeEventSoMeta, playingColorChangeEventSoMeta, stopRowEventSoMeta, upcomingLoopColorChangedEventSoMeta } from './shared-events-soMeta';
 import { machinePlayState } from './shared-events-MBC25';
 
+/**
+ * Coordinates loop playback for the "SoMeta" MBC25 pack.  The logic mirrors
+ * SongManagerLucky but operates on a different set of audio assets.
+ */
 class SongManagerSoMeta extends hz.Component<typeof SongManagerSoMeta> {
     static propsDefinition = {
         chan1Loop1: { type: hz.PropTypes.Entity },
@@ -47,38 +51,29 @@ class SongManagerSoMeta extends hz.Component<typeof SongManagerSoMeta> {
     > = {};
     private loopDurationSec!: number;
 
+    /** Remove any tracking for the given channel's loop. */
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-
-        // if none, do nothing
         if (!oldLoop) return;
-
         delete this.activeLoops[channelId];
     }
 
-    // stops entire channel, checks for playing loop  --> any older playing loops set to default color
+    /**
+     * Stop all audio on a channel and reset button colors back to their
+     * offline state.
+     */
     private stopChannel = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-
-        // if no current loop on channel, do nothing
         if (!oldLoop) return;
-
-        // stops and fades out currently playing loop on channel
+        // Fade out the currently playing loop on the channel
         oldLoop.gizmo.stop({ fade: this.fadeTime });
-
-        // send LocalEvent to hard set color of entire channel back to default
+        // Hard reset the channel button color
         this.sendLocalBroadcastEvent(hardOfflineColorChangeEventSoMeta, {
             channel: channelId,
             loopId: oldLoop.loopSectionId
         });
-
-        // removes loop from active loops
         delete this.activeLoops[channelId];
 
     }
@@ -155,7 +150,7 @@ class SongManagerSoMeta extends hz.Component<typeof SongManagerSoMeta> {
             }
         );
 
-        // Listen for stopRowEventSoMeta / stops channel
+        // Listen for stopRowEventSoMeta to halt a channel
         this.connectLocalBroadcastEvent(
             stopRowEventSoMeta, (channelData) => {
                 this.stopChannel(channelData.channelId);

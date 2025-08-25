@@ -36,13 +36,20 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
     /** Message shown when no packs are unlocked. */
     private emptyMessage = new Binding<string>('');
 
-    /** Return the first connected player as the current UI owner. */
+    /**
+     * Return the first connected player as the current UI owner.
+     * In a single-user test world this effectively targets the
+     * only player present.
+     */
     private getCurrentPlayer(): Player | null {
         const players = this.world.getPlayers();
         return players.length > 0 ? players[0] : null;
     }
 
-    /** Retrieve unlocked packs from persistent storage as a numeric bitmask. */
+    /**
+     * Retrieve unlocked packs from persistent storage, ensuring default packs
+     * are added if missing, and convert the bitmask to a list of pack records.
+     */
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';
         if (!player) return [];

@@ -2,6 +2,11 @@ import * as hz from 'horizon/core';
 import { loopTriggerEventLucky, offlineColorChangeEventLucky, hardOfflineColorChangeEventLucky, playingColorChangeEventLucky, stopRowEventLucky, upcomingLoopColorChangedEventLucky } from './shared-events-lucky';
 import { machinePlayState } from './shared-events-MBC25';
 
+/**
+ * Coordinates loop playback for the "Lucky" MBC25 pack.  It maps editor
+ * properties to audio gizmos, handles loop trigger events, and keeps all
+ * active loops in sync with a common tempo.
+ */
 class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
     static propsDefinition = {
         chan1Loop1: { type: hz.PropTypes.Entity },
@@ -48,40 +53,30 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
     > = {};
     private loopDurationSec!: number;
 
+    /** Remove any tracking for the given channel's loop. */
     private removeLoop = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-
-        // if none, do nothing
         if (!oldLoop) return;
-
         delete this.activeLoops[channelId];
     }
 
-    // stops entire channel, checks for playing loop  --> any older playing loops set to default color
+    /**
+     * Stop all audio on a channel and reset button colors back to their
+     * offline state.
+     */
     private stopChannel = (channelId: number) => {
         console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
         const oldLoop = this.activeLoops[channelId];
-
-        // if no current loop on channel, do nothing
         if (!oldLoop) return;
-
-        // stops and fades out currently playing loop on channel
+        // Fade out the currently playing loop on the channel
         oldLoop.gizmo.stop({ fade: this.fadeTime });
-
-        // send LocalEvent to hard set color of entire channel back to default
+        // Hard reset the channel button color
         this.sendLocalBroadcastEvent(hardOfflineColorChangeEventLucky, {
             channel: channelId,
             loopId: oldLoop.loopSectionId
         });
-
-        // removes loop from active loops
         delete this.activeLoops[channelId];
-
     }
 
     preStart() {
@@ -154,7 +149,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
             }
         );
 
-        // Listen for stopRowEventLucky / stops channel
+        // Listen for stopRowEventLucky to halt a channel
         this.connectLocalBroadcastEvent(
             stopRowEventLucky, (channelData) => {
                 this.stopChannel(channelData.channelId);
@@ -163,7 +158,6 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
     }
 
     start() {
-
         const interval = (this.loopDurationSec) * 1000; // converts to ms
 
         // Every interval ms, replay every active loop so they stay in lock-step
