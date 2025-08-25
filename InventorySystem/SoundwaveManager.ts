@@ -23,10 +23,10 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     /** Persistent storage key for a player's soundwave balance. */
     private readonly SOUNDWAVE_PPV = 'SoundwaveManager:points';
 
-    private machinePlaying: boolean = false;
-    private currentPerformer: string | null = null;
-    private afkPlayers: Set<string> = new Set();
-    private listenerToastShown: Set<string> = new Set();
+    private machinePlaying: boolean = false; // whether any loops are active
+    private currentPerformer: string | null = null; // name of the active performer
+    private afkPlayers: Set<string> = new Set(); // players currently AFK
+    private listenerToastShown: Set<string> = new Set(); // to avoid duplicate toasts
     private performerToastShown: Set<string> = new Set();
 
     /** Retrieve a player's current soundwave balance. */
@@ -130,6 +130,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     };
 
     /** Handle purchase requests from the store UI. */
+    /** Attempt to purchase a pack with soundwave points for the given player. */
     private handlePurchase = ({ playerName, packId, cost }: { playerName: string; packId: string; cost: number; }) => {
         const player = this.world
             .getPlayers()
@@ -146,7 +147,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     };
 
     preStart() {
-        // Track AFK status.
+        // Track AFK status so inactive players don't earn points.
         this.connectCodeBlockEvent(
             this.entity!,
             hz.CodeBlockEvents.OnPlayerEnterAFK,
@@ -178,19 +179,19 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
             
         });
 
-        // Listen for performer changes.
+        // Keep track of which player is performing for bonus points.
         this.connectLocalBroadcastEvent(activePerformerChanged, ({ playerName }) => {
             this.currentPerformer = playerName;
         });
 
-        // Handle purchases from UI.
+        // Handle purchase requests coming from the store UI.
         this.connectLocalEvent(
             this.entity!,
             purchasePackWithSoundwaves,
             this.handlePurchase
         );
 
-        // Award points every minute.
+        // Award points every minute based on current activity.
         this.async.setInterval(this.awardPoints, 60_000);
     }
 

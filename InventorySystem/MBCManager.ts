@@ -57,6 +57,11 @@ class MBCManager extends hz.Component<typeof MBCManager> {
         return bit !== undefined && (mask & bit) !== 0;
     }
 
+    /**
+     * When a controlling player goes AFK, begin a countdown that will
+     * automatically relinquish the machine after a short grace period.
+     * If the player returns before the timer expires the countdown is aborted.
+     */
     private forfeitControlCountdown(player: hz.Player): void {
         const playerName = player.name.get();
 
@@ -64,7 +69,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
         const startTime = Date.now();
         let aborted = false;
 
-        // subscribe once, set flag on AFK-exit
+        // If the performer leaves AFK state, stop the countdown
         this.connectCodeBlockEvent(
             this.entity!,
             hz.CodeBlockEvents.OnPlayerExitAFK,
@@ -73,17 +78,16 @@ class MBCManager extends hz.Component<typeof MBCManager> {
             }
         );
 
-        // schedule a repeating check every 100 ms
+        // Poll every 100ms to see if the grace period has elapsed
         const intervalId = this.async.setInterval(() => {
             if (aborted) {
-                // player returned — cancel interval and bail out
                 this.async.clearInterval(intervalId);
                 return;
             }
 
             const elapsed = Date.now() - startTime;
             if (elapsed >= durationMs) {
-                // time’s up — do your forfeit logic
+                // Timeout reached – clear control of the machine
                 if (playerName === this.controllingPlayer) {
                     this.activePack = null;
                     this.controllingPlayer = null;
@@ -124,7 +128,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
             }
         );
 
-        // Listen for relinquish requests.
+        // Allow players to relinquish control of the active machine.
         this.connectLocalEvent(
             this.entity!,
             relinquishMBC,
@@ -142,6 +146,7 @@ class MBCManager extends hz.Component<typeof MBCManager> {
             }
         );
 
+        // Start a countdown when the controlling player goes AFK.
         this.connectCodeBlockEvent(
             this.entity!,
             hz.CodeBlockEvents.OnPlayerEnterAFK,
