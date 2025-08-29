@@ -1,5 +1,5 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEventLucky, offlineColorChangeEventLucky, hardOfflineColorChangeEventLucky, playingColorChangeEventLucky, upcomingLoopColorChangedEventLucky } from './shared-events-lucky';
+import { loopTriggerEventpEc, offlineColorChangeEventpEc, hardOfflineColorChangeEventpEc, playingColorChangeEventpEc, upcomingLoopColorChangedEventpEc } from './shared-events-pEc';
 
 enum ButtonState {
     Idle,
@@ -7,7 +7,7 @@ enum ButtonState {
     Playing,
 }
 
-class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky> {
+class LoopButtonTriggerpEc extends hz.Component<typeof LoopButtonTriggerpEc> {
     // starts each button as 'idle'
     public state = ButtonState.Idle;
 
@@ -19,9 +19,9 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
         originalButtonColor: { type: hz.PropTypes.Color, default: new hz.Color(1.0, 0.5, 0.0) },
         loopButton: { type: hz.PropTypes.Entity }
     };
-    // sends loopTriggerEventLucky with channelId and LoopSectionId
+    // sends loopTriggerEventpEc with channelId and LoopSectionId
     private startLoopPress = (): void => {
-            this.sendLocalBroadcastEvent(loopTriggerEventLucky, ({
+            this.sendLocalBroadcastEvent(loopTriggerEventpEc, ({
             channelId: this.props.channelId,
             loopSectionId: this.props.loopSectionId
         }));  
@@ -90,8 +90,8 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
         // sets color to default at start
         this.buttonOffline(); 
 
-        // listen to offlineColorChangeEventLucky if button if correct match
-        this.connectLocalBroadcastEvent(offlineColorChangeEventLucky, (loopData) => {
+        // listen to offlineColorChangeEventpEc if button if correct match
+        this.connectLocalBroadcastEvent(offlineColorChangeEventpEc, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
                 // checks for loopId match
@@ -102,8 +102,8 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
             }
         });
 
-        // listen to offlineColorChangeEventLucky if button if correct match
-        this.connectLocalBroadcastEvent(hardOfflineColorChangeEventLucky, (loopData) => {
+        // listen to offlineColorChangeEventpEc if button if correct match
+        this.connectLocalBroadcastEvent(hardOfflineColorChangeEventpEc, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
                 // checks for loopId match
@@ -114,8 +114,8 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
             }
         });
 
-        // listen to playingColorChangeEventLucky if button is correct match
-        this.connectLocalBroadcastEvent(playingColorChangeEventLucky, (loopData) => {
+        // listen to playingColorChangeEventpEc if button is correct match
+        this.connectLocalBroadcastEvent(playingColorChangeEventpEc, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
                 // checks for loopId match
@@ -126,8 +126,8 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
             }
         });
 
-        // listen to upcomingLoopColorChangedEventLucky if button is correct match
-        this.connectLocalBroadcastEvent(upcomingLoopColorChangedEventLucky, (loopData) => {
+        // listen to upcomingLoopColorChangedEventpEc if button is correct match
+        this.connectLocalBroadcastEvent(upcomingLoopColorChangedEventpEc, (loopData) => {
             // checks for channelId match
             if (loopData.channel == this.props.channelId) {
                 // checks for loopId match
@@ -158,4 +158,4 @@ class LoopButtonTriggerLucky extends hz.Component<typeof LoopButtonTriggerLucky>
     }
 
 }
-hz.Component.register(LoopButtonTriggerLucky);
+hz.Component.register(LoopButtonTriggerpEc);

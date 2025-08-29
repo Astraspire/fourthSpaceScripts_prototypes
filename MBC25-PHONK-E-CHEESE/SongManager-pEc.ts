@@ -1,8 +1,8 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEventLucky, offlineColorChangeEventLucky, hardOfflineColorChangeEventLucky, playingColorChangeEventLucky, stopRowEventLucky, upcomingLoopColorChangedEventLucky } from './shared-events-lucky';
+import { loopTriggerEventpEc, offlineColorChangeEventpEc, hardOfflineColorChangeEventpEc, playingColorChangeEventpEc, stopRowEventpEc, upcomingLoopColorChangedEventpEc } from './shared-events-pEc';
 import { machinePlayState } from './shared-events-MBC25';
 
-class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
+class SongManagerpEc extends hz.Component<typeof SongManagerpEc> {
     static propsDefinition = {
         chan1Loop1: { type: hz.PropTypes.Entity },
         chan1Loop2: { type: hz.PropTypes.Entity },
@@ -74,7 +74,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
         oldLoop.gizmo.stop({ fade: this.fadeTime });
 
         // send LocalEvent to hard set color of entire channel back to default
-        this.sendLocalBroadcastEvent(hardOfflineColorChangeEventLucky, {
+        this.sendLocalBroadcastEvent(hardOfflineColorChangeEventpEc, {
             channel: channelId,
             loopId: oldLoop.loopSectionId
         });
@@ -106,9 +106,9 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
         // decides loop duration based on properties set - forced loop duration to floating number to prevent rounding errors in the future (due to trunctation)
         this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
 
-        // Listen for loopTriggerEventLucky
+        // Listen for loopTriggerEventpEc
         this.connectLocalBroadcastEvent(
-            loopTriggerEventLucky, (loopData) => {
+            loopTriggerEventpEc, (loopData) => {
                 console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
 
                 const incomingChannelId = loopData.channelId;
@@ -126,7 +126,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
                     // (but not active - checked in LoopButtonTrigger script)
                     // then, turn to offline / idle
                     if (oldLoop.channelId === incomingChannelId) {
-                        this.sendLocalBroadcastEvent(offlineColorChangeEventLucky, {
+                        this.sendLocalBroadcastEvent(offlineColorChangeEventpEc, {
                             channel: loopData.channelId,
                             loopId: oldLoop.loopSectionId,
                         });
@@ -137,7 +137,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
                 }                
 
                 // sets new upcoming loop to upcoming playing color
-                this.sendLocalBroadcastEvent(upcomingLoopColorChangedEventLucky, {
+                this.sendLocalBroadcastEvent(upcomingLoopColorChangedEventpEc, {
                     channel: loopData.channelId,
                     loopId: loopData.loopSectionId
                 });
@@ -154,9 +154,9 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
             }
         );
 
-        // Listen for stopRowEventLucky / stops channel
+        // Listen for stopRowEventpEc / stops channel
         this.connectLocalBroadcastEvent(
-            stopRowEventLucky, (channelData) => {
+            stopRowEventpEc, (channelData) => {
                 this.stopChannel(channelData.channelId);
             }
         );
@@ -172,7 +172,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
             // turns all loops Offline color and status
             this.channelLoops.forEach((loops, channelIdx) => {
                 loops.forEach((gizmo, loopIdx) => {
-                    this.sendLocalBroadcastEvent(hardOfflineColorChangeEventLucky, {
+                    this.sendLocalBroadcastEvent(hardOfflineColorChangeEventpEc, {
                         channel: channelIdx + 1,
                         loopId: loopIdx + 1,
                     });
@@ -182,7 +182,7 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
             // changes all selected loops to Playing color and status
             // and triggers corresponding audio
             Object.values(this.activeLoops).forEach(({ channelId, loopSectionId, gizmo }) => {
-                this.sendLocalBroadcastEvent(playingColorChangeEventLucky, {
+                this.sendLocalBroadcastEvent(playingColorChangeEventpEc, {
                     channel: channelId,
                     loopId: loopSectionId,
                 });
@@ -198,4 +198,4 @@ class SongManagerLucky extends hz.Component<typeof SongManagerLucky> {
         };
     }
 }
-hz.Component.register(SongManagerLucky);
+hz.Component.register(SongManagerpEc);

@@ -1,13 +1,13 @@
 import * as hz from 'horizon/core';
-import { stopRowEventLucky } from './shared-events-lucky';
+import { stopRowEventpEc } from './shared-events-pEc';
 
-class StopButtonTriggerLucky extends hz.Component<typeof StopButtonTriggerLucky> {
+class StopButtonTriggerpEc extends hz.Component<typeof StopButtonTriggerpEc> {
     static propsDefinition = {
         channelId: { type: hz.PropTypes.Number },
     };
 
     private sendStop = (): void => {
-        this.sendLocalBroadcastEvent(stopRowEventLucky, ({
+        this.sendLocalBroadcastEvent(stopRowEventpEc, ({
             channelId: this.props.channelId
         }));
     }
@@ -26,4 +26,4 @@ class StopButtonTriggerLucky extends hz.Component<typeof StopButtonTriggerLucky>
     }
 
 }
-hz.Component.register(StopButtonTriggerLucky);
+hz.Component.register(StopButtonTriggerpEc);
