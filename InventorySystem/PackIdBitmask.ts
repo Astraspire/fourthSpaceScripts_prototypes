@@ -7,8 +7,7 @@
 export const PACK_ID_BITS: Record<string, number> = {
     'MBC25-LUCKY': 1 << 0,
     'MBC25-SOMETA': 1 << 1,
-    // Low-cost test machine used by the store UI.
-    'MBC25-TEST': 1 << 2,
+    'MBC25-PHONK-E-CHEESE': 1 << 2,
 };
 
 /** Default packs that should always be unlocked for players. */

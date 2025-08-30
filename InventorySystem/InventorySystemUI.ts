@@ -1,7 +1,7 @@
 import * as hz from 'horizon/core';
 import { Text, Pressable, UIComponent, UINode, View, DynamicList, Binding } from 'horizon/ui';
-import { Entity, Player } from 'horizon/core';
-import { requestMBCActivation, relinquishMBC, inventoryUpdated } from './shared-events-MBC25';
+import { Player } from 'horizon/core';
+import { requestMBCActivation, relinquishMBC, inventoryUpdated, soundwaveBalanceChanged } from './shared-events-MBC25';
 import { addDefaultPacks, maskToPackList } from './PackIdBitmask';
 
 /**
@@ -36,20 +36,32 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
     /** Message shown when no packs are unlocked. */
     private emptyMessage = new Binding<string>('');
 
-    /**
-     * Return the first connected player as the current UI owner.
-     * In a single-user test world this effectively targets the
-     * only player present.
-     */
+    /** Return the first connected player as the current UI owner. */
     private getCurrentPlayer(): Player | null {
         const players = this.world.getPlayers();
         return players.length > 0 ? players[0] : null;
     }
 
-    /**
-     * Retrieve unlocked packs from persistent storage, ensuring default packs
-     * are added if missing, and convert the bitmask to a list of pack records.
+
+    // !!FIXME!! 
+    /** 
+     * needs to refresh to player when updates in store happen!!
+     * 
      */
+    /** Refresh the inventory list bindings. */
+    private refreshInventory(playerName: string): void {
+        const player = this.world.getPlayers().find(p => p.name.get() === playerName) ?? null;
+        const packs = this.getUnlockedPacks(player);
+        if (packs.length > 0) {
+            this.packData.set(packs);
+            this.emptyMessage.set('');
+        } else {
+            this.packData.set([]);
+            this.emptyMessage.set('No MBC25 packs unlocked.');
+        }
+    }
+
+    /** Retrieve unlocked packs from persistent storage as a numeric bitmask. */
     private getUnlockedPacks(player: Player | null): Array<{ packId: string }> {
         const key = 'MBC25Inventory:unlockedSoundPacks';
         if (!player) return [];
@@ -69,24 +81,20 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
             ({ playerName }) => {
                 const player = this.getCurrentPlayer();
                 if (player && player.name.get() === playerName) {
-                    this.refreshInventory();
+                    this.refreshInventory(playerName);
                 }
             }
         );
 
-    }
+        // Update balance when the manager notifies of changes.
+        this.connectLocalBroadcastEvent(
+            soundwaveBalanceChanged,
+            (payload: { playerName: string; balance: number }) => {
+                // Rebuild the inventory list in case a pack was bought.
+                this.refreshInventory(payload.playerName);
+            }
+        );
 
-    /** Refresh the inventory list bindings. */
-    private refreshInventory(): void {
-        const player = this.getCurrentPlayer();
-        const packs = this.getUnlockedPacks(player);
-        if (packs.length > 0) {
-            this.packData.set(packs);
-            this.emptyMessage.set('');
-        } else {
-            this.packData.set([]);
-            this.emptyMessage.set('No MBC25 packs unlocked.');
-        }
     }
 
     /**
@@ -98,7 +106,6 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
      * the active machine by sending a relinquishMBC event.
      */
     initializeUI(): UINode {
-        this.refreshInventory();
         return View({
             children: [
                 Text({
@@ -154,8 +161,8 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
                         }
                     },
                     style: {
-                        marginTop: 16,
-                        padding: 4,
+                        marginTop: 10,
+                        padding: 2,
                         backgroundColor: 'rgba(255,0,0,0.2)',
                     },
                     children: Text({
@@ -166,9 +173,27 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
                         },
                     }),
                 }),
+
+                Pressable({
+                    onPress: (_player) => {
+                        const playerName = this.refreshInventory((_player.name.get()));
+                    },
+                    style: {
+                        marginTop: 4,
+                        padding: 2,
+                        backgroundColor: 'rgba(255,0,0,0.2)',
+                    },
+                    children: Text({
+                        text: 'Open/Refresh your inventory',
+                        style: {
+                            fontSize: 20,
+                            color: 'blue',
+                        },
+                    }),
+                }),
             ],
             style: {
-                backgroundColor: 'black',
+                backgroundColor: 'white',
                 height: this.panelHeight,
                 width: this.panelWidth,
                 padding: 12,
@@ -180,3 +205,7 @@ class InventorySystemUI extends UIComponent<typeof InventorySystemUI> {
 
 // Register the UI component so it can be attached to a UI Gizmo.
 UIComponent.register(InventorySystemUI);
+
+function refreshInventory() {
+    throw new Error('Function not implemented.');
+}
