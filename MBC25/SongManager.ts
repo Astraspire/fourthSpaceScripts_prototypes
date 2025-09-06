@@ -1,6 +1,20 @@
 import * as hz from 'horizon/core';
-import { loopTriggerEvent, offlineColorChangeEvent, hardOfflineColorChangeEvent, playingColorChangeEvent, stopRowEvent, upcomingLoopColorChangedEvent, machinePlayState } from './shared-events';
+import {
+    loopTriggerEvent,
+    offlineColorChangeEvent,
+    hardOfflineColorChangeEvent,
+    playingColorChangeEvent,
+    stopRowEvent,
+    upcomingLoopColorChangedEvent,
+    machinePlayState,
+} from './shared-events';
 
+/**
+ * Coordinates loop playback for the generic MBC25 machine.  It mirrors the
+ * behavior of the pack-specific managers so that any set of loops can use the
+ * same script.  Loops begin playing immediately when first triggered and are
+ * kept in sync on subsequent repetitions.
+ */
 class SongManager extends hz.Component<typeof SongManager> {
     static propsDefinition = {
         chan1Loop1: { type: hz.PropTypes.Entity },
@@ -31,159 +45,55 @@ class SongManager extends hz.Component<typeof SongManager> {
         customFadeTime: { type: hz.PropTypes.Number },
         customBPM: { type: hz.PropTypes.Number },
         beatsPerLoop: { type: hz.PropTypes.Number },
-
     };
 
     private fadeTime!: number;
     private songBPM!: number;
     private beatsPerLoop!: number;
     private channelLoops!: hz.AudioGizmo[][];
-    private activeLoops: Record<number,
-        {
-            channelId: number;
-            loopSectionId: number;
-            gizmo: hz.AudioGizmo
-        }
-    > = {};
+    private activeLoops: Record<number, {
+        channelId: number;
+        loopSectionId: number;
+        gizmo: hz.AudioGizmo;
+    }> = {};
     private loopDurationSec!: number;
-    private playing: boolean = false;
+    private intervalId: number | null = null;
+    private playing = false;
 
-    private removeLoop = (channelId: number) => {
-        console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
-        const oldLoop = this.activeLoops[channelId];
-
-        // if none, do nothing
-        if (!oldLoop) return;
-
+    /** Remove tracking for a channel's current loop without affecting play state. */
+    private removeLoop(channelId: number) {
         delete this.activeLoops[channelId];
-        this.updatePlayState();
     }
 
-    // stops entire channel, checks for playing loop  --> any older playing loops set to default color
-    private stopChannel = (channelId: number) => {
-        console.log(`Channel ${channelId} triggered to stop.`)
-
-        // marks oldLoop
+    /** Stop all audio on a channel and update play state. */
+    private stopChannel(channelId: number) {
+        console.log(`Channel ${channelId} triggered to stop.`);
         const oldLoop = this.activeLoops[channelId];
-
-        // if no current loop on channel, do nothing
         if (!oldLoop) return;
 
-        // stops and fades out currently playing loop on channel
         oldLoop.gizmo.stop({ fade: this.fadeTime });
-
-        // send LocalEvent to hard set color of entire channel back to default
         this.sendLocalBroadcastEvent(hardOfflineColorChangeEvent, {
             channel: channelId,
-            loopId: oldLoop.loopSectionId
+            loopId: oldLoop.loopSectionId,
         });
+        this.removeLoop(channelId);
 
-        // removes loop from active loops
-        delete this.activeLoops[channelId];
-        this.updatePlayState();
-
-    }
-
-    override preStart() {
-        // maps all audio gizmos to the channel grid
-        this.channelLoops = [
-            [this.props.chan1Loop1!.as(hz.AudioGizmo), this.props.chan1Loop2!.as(hz.AudioGizmo), this.props.chan1Loop3!.as(hz.AudioGizmo), this.props.chan1Loop4!.as(hz.AudioGizmo), this.props.chan1Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan2Loop1!.as(hz.AudioGizmo), this.props.chan2Loop2!.as(hz.AudioGizmo), this.props.chan2Loop3!.as(hz.AudioGizmo), this.props.chan2Loop4!.as(hz.AudioGizmo), this.props.chan2Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan3Loop1!.as(hz.AudioGizmo), this.props.chan3Loop2!.as(hz.AudioGizmo), this.props.chan3Loop3!.as(hz.AudioGizmo), this.props.chan3Loop4!.as(hz.AudioGizmo), this.props.chan3Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan4Loop1!.as(hz.AudioGizmo), this.props.chan4Loop2!.as(hz.AudioGizmo), this.props.chan4Loop3!.as(hz.AudioGizmo), this.props.chan4Loop4!.as(hz.AudioGizmo), this.props.chan4Loop5!.as(hz.AudioGizmo)],
-            [this.props.chan5Loop1!.as(hz.AudioGizmo), this.props.chan5Loop2!.as(hz.AudioGizmo), this.props.chan5Loop3!.as(hz.AudioGizmo), this.props.chan5Loop4!.as(hz.AudioGizmo), this.props.chan5Loop5!.as(hz.AudioGizmo)],
-        ];
-
-        // cross-fade time in seconds
-        this.fadeTime = this.props.customFadeTime!;
-
-        // Defines song BPM for script
-        this.songBPM = this.props.customBPM!;
-
-        // Defines beatsPerLoop for script
-        this.beatsPerLoop = this.props.beatsPerLoop!;
-
-        // decides loop duration based on properties set - forced loop duration to floating number to prevent rounding errors in the future (due to trunctation)
-        this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
-
-        // Listen for loopTriggerEvent
-        this.connectLocalBroadcastEvent(
-            loopTriggerEvent, (loopData) => {
-                console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
-
-                const incomingChannelId = loopData.channelId;
-                const incomingLoopId = loopData.loopSectionId;
-                // Store previous active loop on that incoming triggered channel
-                const oldLoop = this.activeLoops[incomingChannelId];
-
-                if (oldLoop != undefined) {
-                    // if old loop is the same as new loop, do nothing
-                    if ((oldLoop.loopSectionId === incomingLoopId)) {
-                        return;
-                    }
-
-                    // if there is an upcoming loop on the channel already blue 
-                    // (but not active - checked in LoopButtonTrigger script)
-                    // then, turn to offline / idle
-                    if (oldLoop.channelId === incomingChannelId) {
-                        this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
-                            channel: loopData.channelId,
-                            loopId: oldLoop.loopSectionId,
-                        });
-
-                        // removes from activeLoops
-                        this.removeLoop(loopData.channelId);
-                    }
-
-                }                
-
-                // sets new upcoming loop to upcoming playing color
-                this.sendLocalBroadcastEvent(upcomingLoopColorChangedEvent, {
-                    channel: loopData.channelId,
-                    loopId: loopData.loopSectionId
-                });
-
-                // assigns new loop for playback
-                const newAudio = this.channelLoops[loopData.channelId - 1][loopData.loopSectionId - 1];
-
-                // Track it in our active playing map
-                this.activeLoops[loopData.channelId] = {
-                    channelId: loopData.channelId,
-                    loopSectionId: loopData.loopSectionId,
-                    gizmo: newAudio
-                };
-
-                this.updatePlayState();
-
+        if (Object.keys(this.activeLoops).length === 0) {
+            if (this.intervalId !== null) {
+                this.async.clearInterval(this.intervalId);
+                this.intervalId = null;
             }
-        );
-
-        // Listen for stopRowEvent / stops channel
-        this.connectLocalBroadcastEvent(
-            stopRowEvent, (channelData) => {
-                this.stopChannel(channelData.channelId);
-            }
-        );
-    }
-
-    private updatePlayState() {
-        const isPlaying = Object.keys(this.activeLoops).length > 0;
-        if (isPlaying !== this.playing) {
-            this.playing = isPlaying;
-            this.sendLocalBroadcastEvent(machinePlayState, { isPlaying });
+            this.updatePlayState();
         }
     }
 
-    override start() {
+    /** Start the repeating scheduler that keeps loops in sync. */
+    private startLoopScheduler() {
+        if (this.intervalId !== null) return;
 
-        const interval = (this.loopDurationSec) * 1000; // converts to ms
-
-        // Every interval ms, replay every active loop so they stay in lock-step
-        this.async.setInterval(() => {
-
-            // turns all loops Offline color and status
+        const interval = this.loopDurationSec * 1000; // ms
+        this.intervalId = this.async.setInterval(() => {
+            // Reset all buttons to their offline state first
             this.channelLoops.forEach((loops, channelIdx) => {
                 loops.forEach((gizmo, loopIdx) => {
                     this.sendLocalBroadcastEvent(hardOfflineColorChangeEvent, {
@@ -193,8 +103,7 @@ class SongManager extends hz.Component<typeof SongManager> {
                 });
             });
 
-            // changes all selected loops to Playing color and status
-            // and triggers corresponding audio
+            // Then bring the active loops online and replay them
             Object.values(this.activeLoops).forEach(({ channelId, loopSectionId, gizmo }) => {
                 this.sendLocalBroadcastEvent(playingColorChangeEvent, {
                     channel: channelId,
@@ -204,5 +113,84 @@ class SongManager extends hz.Component<typeof SongManager> {
             });
         }, interval);
     }
+
+    /** Broadcast whether the machine currently has audible loops. */
+    private updatePlayState() {
+        const isPlaying = Object.keys(this.activeLoops).length > 0;
+        if (isPlaying !== this.playing) {
+            this.playing = isPlaying;
+            this.sendLocalBroadcastEvent(machinePlayState, { isPlaying });
+        }
+    }
+
+    preStart() {
+        // Map all audio gizmos to their grid positions
+        this.channelLoops = [
+            [this.props.chan1Loop1!.as(hz.AudioGizmo), this.props.chan1Loop2!.as(hz.AudioGizmo), this.props.chan1Loop3!.as(hz.AudioGizmo), this.props.chan1Loop4!.as(hz.AudioGizmo), this.props.chan1Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan2Loop1!.as(hz.AudioGizmo), this.props.chan2Loop2!.as(hz.AudioGizmo), this.props.chan2Loop3!.as(hz.AudioGizmo), this.props.chan2Loop4!.as(hz.AudioGizmo), this.props.chan2Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan3Loop1!.as(hz.AudioGizmo), this.props.chan3Loop2!.as(hz.AudioGizmo), this.props.chan3Loop3!.as(hz.AudioGizmo), this.props.chan3Loop4!.as(hz.AudioGizmo), this.props.chan3Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan4Loop1!.as(hz.AudioGizmo), this.props.chan4Loop2!.as(hz.AudioGizmo), this.props.chan4Loop3!.as(hz.AudioGizmo), this.props.chan4Loop4!.as(hz.AudioGizmo), this.props.chan4Loop5!.as(hz.AudioGizmo)],
+            [this.props.chan5Loop1!.as(hz.AudioGizmo), this.props.chan5Loop2!.as(hz.AudioGizmo), this.props.chan5Loop3!.as(hz.AudioGizmo), this.props.chan5Loop4!.as(hz.AudioGizmo), this.props.chan5Loop5!.as(hz.AudioGizmo)],
+        ];
+
+        this.fadeTime = this.props.customFadeTime!;
+        this.songBPM = this.props.customBPM!;
+        this.beatsPerLoop = this.props.beatsPerLoop!;
+        this.loopDurationSec = (60.0 / this.songBPM) * this.beatsPerLoop;
+
+        // React to loop trigger events
+        this.connectLocalBroadcastEvent(loopTriggerEvent, (loopData) => {
+            console.log(`Channel: ${loopData.channelId}, Loop: ${loopData.loopSectionId} triggered to start.`);
+            const incomingChannelId = loopData.channelId;
+            const incomingLoopId = loopData.loopSectionId;
+            const wasEmpty = Object.keys(this.activeLoops).length === 0;
+            const oldLoop = this.activeLoops[incomingChannelId];
+
+            if (oldLoop !== undefined) {
+                if (oldLoop.loopSectionId === incomingLoopId) {
+                    return; // already playing this loop
+                }
+                this.sendLocalBroadcastEvent(offlineColorChangeEvent, {
+                    channel: loopData.channelId,
+                    loopId: oldLoop.loopSectionId,
+                });
+                this.removeLoop(loopData.channelId);
+            }
+
+            const newAudio = this.channelLoops[incomingChannelId - 1][incomingLoopId - 1];
+            this.activeLoops[incomingChannelId] = {
+                channelId: incomingChannelId,
+                loopSectionId: incomingLoopId,
+                gizmo: newAudio,
+            };
+
+            if (wasEmpty) {
+                // First loop starts immediately
+                this.startLoopScheduler();
+                this.sendLocalBroadcastEvent(playingColorChangeEvent, {
+                    channel: loopData.channelId,
+                    loopId: loopData.loopSectionId,
+                });
+                newAudio.play();
+                this.updatePlayState();
+            } else {
+                // Subsequent loops queue for next bar
+                this.sendLocalBroadcastEvent(upcomingLoopColorChangedEvent, {
+                    channel: loopData.channelId,
+                    loopId: loopData.loopSectionId,
+                });
+            }
+        });
+
+        // Listen for channel stop requests
+        this.connectLocalBroadcastEvent(stopRowEvent, (channelData) => {
+            this.stopChannel(channelData.channelId);
+        });
+    }
+
+    start() {
+        // Interval scheduler begins on first loop press, nothing needed here.
+    }
 }
+
 hz.Component.register(SongManager);
