@@ -1,67 +1,68 @@
 # Fourth Space MBC25 Scripts
 
-This repository contains prototype scripts for the **MBC25** musical beat machine and a small inventory system used to unlock and activate different machine variants. The code is written for the Horizon Worlds scripting API using TypeScript. This guide walks through the folders and explains how the pieces fit together so a new creator can navigate and extend the system.
+This repository contains prototype scripts for the **MBC25** musical beat machine and the supporting systems that unlock and manage different machine variants.  All current machines use the generic scripts in the `MBC25/` folder, allowing any new sound pack to plug into the same core logic.  The code targets the Horizon Worlds scripting API and is written in TypeScript.
 
 ## Repository layout
 
 ```
-InventorySystem/     Inventory and user interface scripts
-MBC25/               Core logic for the MBC25 beat machine
-MBC25-LUCKY/         Example machine prefab (Lucky)
-MBC25-SOMETA/        Example machine prefab (SoMeta)
+InventorySystem/          Inventory management, soundwave economy and UI
+MBC25/                    Generic logic for the MBC25 beat machine
+MBC25-LUCKY/              Lucky machine prefab using the generic scripts
+MBC25-SOMETA/             SoMeta machine prefab using the generic scripts
+MBC25-PHONK-E-CHEESE/     Phonk‑E‑Cheese machine prefab using the generic scripts
 ```
 
-The `MBC25-LUCKY` and `MBC25-SOMETA` folders contain example assets and are not covered in detail here. Most beginners only need to understand the `InventorySystem` and `MBC25` directories.
+The prefab folders contain audio assets and scene setups for each machine.  Most scripting lives in `InventorySystem/` and `MBC25/`.
 
-## InventorySystem
+## Inventory and soundwave system
 
-The inventory system keeps track of which MBC25 sound packs a player has unlocked and which machine is currently active. Key files include:
-
-### `shared-events-MBC25.ts`
-Defines local events used to communicate between inventory scripts and the machines. For example, `unlockMBC25` informs the inventory that a new pack was earned, and `changeActiveMBC` tells drop spawners which machine to show.
+The inventory keeps track of which sound packs each player owns, awards **soundwave** points while music plays, and provides UIs for activating machines or purchasing new packs.  The components communicate through events defined in [`shared-events-MBC25.ts`](InventorySystem/shared-events-MBC25.ts).
 
 ### `MBC25Inventory.ts`
-Manages per-player storage of unlocked packs using Horizon's persistent key–value store. It saves a JSON array under the key `MBC25Inventory:unlockedSoundPacks` and exposes helpers to look up players, print their inventory, and unlock new packs. Every player now begins with the `MBC25-LUCKY` and `MBC25-SOMETA` packs unlocked by default.
+Stores unlocked packs per player using a bitmask.  When an `unlockMBC25` event arrives the component updates persistent storage, broadcasts `inventoryUpdated`, and triggers `dropMBC` so the newly unlocked machine appears immediately.
 
 ### `InventorySystemUI.ts`
-Provides a simple UI listing the player's unlocked packs. Each entry is a pressable row that requests activation of that pack; another row lets the player put away the currently active machine.
+UI listing the player’s unlocked packs.  Selecting a pack sends `requestMBCActivation` to the manager; a separate button emits `relinquishMBC` to put away the active machine.  The UI refreshes itself when `inventoryUpdated` or `soundwaveBalanceChanged` broadcasts occur.
 
 ### `MBCManager.ts`
-Ensures only one MBC25 machine is active at a time. It verifies that the requesting player owns the pack, drops the correct machine, and listens for relinquish events or AFK timeouts to free the machine for others.
+Coordinates which machine is active.  It grants control when `requestMBCActivation` is received from the UI, ensuring the player owns the pack, then broadcasts `changeActiveMBC` and `activePerformerChanged`.  When `relinquishMBC` fires or the performer goes AFK the manager clears the lock and hides the machine.
 
 ### `MBCDrop.ts`
-Controls spawning and visibility of the actual machine prefabs. When it receives a `dropMBC` or `changeActiveMBC` event with a matching pack ID, it spawns the corresponding asset and moves it into place.
+Spawns or despawns prefabs based on `dropMBC` and `changeActiveMBC` events.  Each machine prefab has an `MBCDrop` instance configured with its pack ID so it can react when that pack becomes active.
 
-### `unlockMBCTwo.ts`
-A utility component for trigger zones. When a player exits the trigger it emits an `unlockMBC25` event to grant the configured pack and causes the machine to drop for that player.
+### Soundwave economy
+`SoundwaveManager.ts` listens for `machinePlayState` from the beat machine and for `activePerformerChanged` from the manager.  Every minute of active listening awards points, and performers earn a bonus for each listener.  The `soundwaveBalanceChanged` broadcast keeps UIs in sync.  Purchases from `SoundwaveStoreUI.ts` send `purchasePackWithSoundwaves` to the manager, which validates the balance and uses `unlockMBC25` to grant the pack.  `SoundwaveStoreTrigger.ts` raises `openSoundwaveStore` when a player enters a trigger volume to show the store UI.
 
-### Soundwave system
-The new soundwave point system rewards players for participating in music sessions. The `SoundwaveManager.ts` component tracks
-points over time while a machine is playing and stores the balance in persistent player data. `SoundwaveStoreUI.ts` presents a
-scrollable shop where players can spend their points to unlock additional beat packs. `SoundwaveStoreTrigger.ts` can be placed on
-a trigger volume to pop open the store when a player approaches, hiding it again when they leave. A low-cost `MBC25-TEST` pack is
-included for exercising the credit flow. UI toasts inform listeners and performers the first time they begin accumulating points.
+### Unlock triggers
+`unlockMBCTwo.ts` is a simple trigger component that emits `unlockMBC25` when a player leaves its volume.  It can be dropped anywhere in a world to hand out packs during gameplay.
 
-## MBC25 scripts
+## MBC25 machine scripts
 
-The `MBC25` directory contains the behavior for the beat machine itself. Important files include:
+The `MBC25/` folder holds the generic machine behavior shared by all prefabs.
 
 ### `shared-events.ts`
-Event definitions used by the machine's subsystems. They coordinate loop playback, color changes, and row stops across components.
+Defines machine‑internal events such as `loopTriggerEvent` and `stopRowEvent`, plus `machinePlayState` which tells external systems when music is audible.
 
 ### `SongManager.ts`
-Central controller that plays audio loops in sync. It listens for loop trigger events, cross-fades between loops, and replays active loops on a timed interval so they remain locked to the beat.
+Central loop scheduler.  When a button trigger sends `loopTriggerEvent`, the manager starts or queues audio loops, keeps them in sync, and rebroadcasts `machinePlayState` whenever the machine starts or stops playing.
 
-### `LoopButtonTrigger.ts`
-Script placed on each loop button. It handles button color changes for idle/upcoming/playing states and broadcasts `loopTriggerEvent` when the player presses a button to queue a loop.
+### `LoopButtonTrigger.ts` and `StopButtonTrigger.ts`
+Attach these to button and stop trigger gizmos in a prefab.  Loop buttons update their colors and fire `loopTriggerEvent`; stop buttons emit `stopRowEvent` when a player steps off.
 
-### `StopButtonTrigger.ts`
-Simple component for stop buttons. When a player steps off the trigger volume it emits `stopRowEvent` to stop all loops on that channel.
+Because the scripts are generic, new machine prefabs only need their audio gizmos wired into `SongManager` and the inventory system will handle dropping and activation automatically.
+
+## Event flow overview
+
+1. **Unlocking** – Triggers or the store emit `unlockMBC25` → `MBC25Inventory` updates storage and broadcasts `inventoryUpdated` and `dropMBC`.
+2. **Dropping machines** – `MBCDrop` instances listen for `dropMBC` and spawn the matching prefab.
+3. **Activating a machine** – The inventory UI sends `requestMBCActivation` → `MBCManager` validates ownership and broadcasts `changeActiveMBC` and `activePerformerChanged`.
+4. **Playing music** – The active prefab’s `SongManager` plays loops and emits `machinePlayState`.  `SoundwaveManager` awards soundwave points based on these events.
+5. **Purchasing packs** – The store UI dispatches `purchasePackWithSoundwaves` → `SoundwaveManager` deducts points and reuses `unlockMBC25` so the new pack drops immediately.
+6. **Relinquishing** – When `relinquishMBC` is raised, `MBCManager` clears control and broadcasts an empty `changeActiveMBC` so `MBCDrop` hides all machines.
 
 ## Next steps
 
-* Add additional sound packs by extending the inventory and manager lists.
-* Customize the UI in `InventorySystemUI.ts` to fit your world.
-* Explore the example machines in `MBC25-LUCKY` and `MBC25-SOMETA` for asset setup.
+* Add new sound packs by defining a pack ID in `PackIdBitmask.ts`, wiring a prefab to use the generic `MBC25` scripts, and adding the pack to the store list.
+* Customize the UI layouts in `InventorySystemUI.ts` and `SoundwaveStoreUI.ts` to fit your world’s style.
 
-This README gives only a tour of the scripts. The best way to learn is to open the files in your editor, place the components in a Horizon World, and experiment.
+Experiment with the scripts in Horizon Worlds to understand how the events connect and to build your own musical experiences.
