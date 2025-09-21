@@ -23,8 +23,8 @@ export const NotificationEvent = new NetworkEvent<{
 }>("NotificationEvent");
 
 class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> {
-  protected panelHeight: number = 100;
-  protected panelWidth: number = 400;
+  protected panelHeight: number = 140;
+  protected panelWidth: number = 480;
 
   static propsDefinition = {
     hideOnStart: { type: PropTypes.Boolean, default: false },
@@ -33,7 +33,7 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
 
   //region bindings defined
   private bndAlertImg = new Binding<ImageSource>("");
-  private bndAlertMsg = new Binding<string>("Looking good today!");
+  private bndAlertMsg = new Binding<string>("You're now earning Soundwaves!\nKeep jamming!");
   private animBnd_translateX = new AnimatedBinding(0);
 
   //simple button variables
@@ -50,18 +50,18 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
         Image({
           source: this.bndAlertImg,
           style: {
-            height: 80,
-            width: 80,
+            height: 120,
+            width: 120,
             alignSelf: "center",
             margin: 10,
             borderRadius: 40,
-            // backgroundColor: 'rgba(229, 233, 0, 1)',
+            backgroundColor: 'rgba(229, 233, 0, 1)',
           },
         }),
         Text({
           text: this.bndAlertMsg,
           style: {
-            fontSize: 25,
+            fontSize: 14,
             color: "rgba(255, 255, 255, 1)",
             alignSelf: "center",
             textAlign: "left",
@@ -69,14 +69,14 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
             height: this.panelHeight,
             width: 280,
             padding: 10,
-            fontWeight: "bold", // Make text bold
+            // fontWeight: "bold", // Make text bold
             // backgroundColor: 'rgba(0, 255, 85, 1)',
           },
         }),
       ],
       style: {
         flexDirection: "row",
-        backgroundColor: "rgba(255, 0, 0, 1)",
+        backgroundColor: "rgba(50, 0, 200, 1)",
         layoutOrigin: [0.5, 0.5],
         left: "50%",
         top: "50%",
