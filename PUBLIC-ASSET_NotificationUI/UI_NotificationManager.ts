@@ -34,7 +34,7 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
   //region bindings defined
   private bndAlertImg = new Binding<ImageSource>("");
   private bndAlertMsg = new Binding<string>("You're now earning Soundwaves!\nKeep jamming!");
-  private animBnd_translateX = new AnimatedBinding(0);
+  private animBnd_translateX = new AnimatedBinding(-1000);
 
   //simple button variables
   private easeTypeIndex = 0;
@@ -105,8 +105,6 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
   start() {
     if (this.props.hideOnStart) {
       this.entity.visible.set(false);
-    } else {
-      this.showNotification();
     }
   }
 
@@ -125,6 +123,7 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
 
   //region showNotification()
   showNotification(recipients: Player[] | null = null) {
+    this.entity.visible.set(true);
     //set the UI alll the way to the right
     this.animBnd_translateX.set(1000);
     const defaultSequence = Animation.sequence(
@@ -148,8 +147,11 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
     this.animBnd_translateX.set(
       //apply the animation sequence
       defaultSequence,
-      //this could easily be an arrow function () => {console.log("Anim finished");},
-      undefined,
+      () => {
+        if (this.props.hideOnStart) {
+          this.entity.visible.set(false);
+        }
+      },
       //if recipients array has players then only show to those players
       //if recipients array is null, set to undefined == show to all players
       //that's what the ?? is doing
