@@ -1,6 +1,6 @@
 // Copyright (c) Dave Mills (RocketTrouble). Released under the MIT License.
 
-import { Asset, NetworkEvent, Player, PropTypes } from "horizon/core";
+import { Asset, Player, PropTypes } from "horizon/core";
 import {
   AnimatedBinding,
   Animation,
@@ -13,14 +13,7 @@ import {
   UINode,
   View,
 } from "horizon/ui";
-import { simpleButtonEvent } from "UI_SimpleButtonEvent";
-
-//region define events
-export const NotificationEvent = new NetworkEvent<{
-  message: string;
-  players: Player[];
-  imageAssetId: string | null;
-}>("NotificationEvent");
+import { simpleButtonEvent, NotificationEvent } from "UI_SimpleButtonEvent";
 
 class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> {
   protected panelHeight: number = 140;
@@ -110,13 +103,16 @@ class UI_NotificationManager extends UIComponent<typeof UI_NotificationManager> 
 
   //region populateNotification()
   //Populate notification with required message and optional player & imageAssetId
-  populateNotification(message: string, players: Player[], imageAssetId: string | null) {
+  populateNotification(message: string | null, players: Player[], imageAssetId: string | null) {
     const asset = imageAssetId ? new Asset(BigInt(imageAssetId)) : this.props.notificationImg!;
     const imgSrc = ImageSource.fromTextureAsset(asset);
     let recipients = players.length > 0 ? players : undefined;
     this.bndAlertImg.set(imgSrc, recipients);
 
-    this.bndAlertMsg.set(message, recipients);
+    if (message = null) { 
+      message = ""
+    };
+    this.bndAlertMsg.set(message!, recipients);
 
     this.showNotification(recipients);
   }
