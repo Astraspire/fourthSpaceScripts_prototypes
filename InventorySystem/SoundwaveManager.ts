@@ -1,5 +1,6 @@
 import * as hz from 'horizon/core';
 import { Player } from 'horizon/core';
+import { NotificationEvent } from 'UI_NotificationManager';
 import { machinePlayState } from './shared-events-MBC25';
 import {
     activePerformerChanged,
@@ -18,6 +19,7 @@ import {
 export default class SoundwaveManager extends hz.Component<typeof SoundwaveManager> {
     static propsDefinition = {
         InventoryManager: { type: hz.PropTypes.Entity },
+        NotificationManager: { type: hz.PropTypes.Entity, default: null },
     };
 
     /** Persistent storage key for a player's soundwave balance. */
@@ -28,6 +30,7 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     private afkPlayers: Set<string> = new Set(); // players currently AFK
     private listenerToastShown: Set<string> = new Set(); // to avoid duplicate toasts
     private performerToastShown: Set<string> = new Set();
+    private notificationManager: hz.Entity | null = null;
 
     /** Retrieve a player's current soundwave balance. */
     private getBalance(player: Player): number {
@@ -58,6 +61,28 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     ): void {
         // Horizon currently lacks a built-in toast API, so log to console.
         console.log(`[Notification to ${player.name.get()}] ${opts.text}`);
+    }
+
+    /**
+     * Trigger the UI notification pop-up for the given recipients. When no recipients are provided the
+     * message is shown to everyone in the world. Falls back to logging when the manager is not available.
+     */
+    private triggerUiNotification(message: string, recipients?: Player[]): void {
+        const targets =
+            recipients && recipients.length > 0 ? recipients : this.world.getPlayers();
+        for (const target of targets) {
+            console.log(`[Notification to ${target.name.get()}] ${message}`);
+        }
+
+        if (!this.notificationManager) {
+            return;
+        }
+
+        this.sendNetworkEvent(this.notificationManager, NotificationEvent, {
+            message,
+            players: recipients ?? [],
+            imageAssetId: null,
+        });
     }
 
     /** Show a one-time toast to listeners when they start earning points. */
@@ -147,6 +172,26 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
     };
 
     preStart() {
+        const props = this.props as { NotificationManager?: hz.Entity | null };
+        if (props?.NotificationManager) {
+            this.notificationManager = props.NotificationManager;
+        }
+
+        if (!this.notificationManager) {
+            const managers = (this.world as any).getEntitiesWithTags?.([
+                'UI_NotifyManager',
+            ]);
+            if (Array.isArray(managers) && managers.length > 0) {
+                this.notificationManager = managers[0];
+            }
+        }
+
+        if (!this.notificationManager) {
+            console.warn(
+                '[SoundwaveManager] Notification manager entity not found; UI pop-ups will be skipped.'
+            );
+        }
+
         // Track AFK status so inactive players don't earn points.
         this.connectCodeBlockEvent(
             this.entity!,
@@ -161,22 +206,20 @@ export default class SoundwaveManager extends hz.Component<typeof SoundwaveManag
 
         // Listen for machine play state and log changes.
         this.connectLocalBroadcastEvent(machinePlayState, ({ isPlaying }) => {
+            const wasPlaying = this.machinePlaying;
             this.machinePlaying = isPlaying;
-            if (this.machinePlaying = true) {
+
+            if (isPlaying) {
+                if (!wasPlaying) {
+                    this.triggerUiNotification("You're now earning Soundwaves!\nKeep jamming!");
+                }
                 this.awardPoints();
+            } else {
+                this.listenerToastShown.clear();
+                this.performerToastShown.clear();
             }
+
             console.log(`MBC25 machine is now ${isPlaying ? 'playing' : 'stopped'}.`);
-            // Notify all players so we can immediately see when active listening starts
-            // or stops, providing feedback similar to a simple toast UI.
-            for (const p of this.world.getPlayers()) {
-                this.showNotification(p, {
-                    text: isPlaying
-                        ? 'Active listening started!'
-                        : 'Active listening paused.',
-                    position: { horizontal: 'left', vertical: 'top' },
-                });
-            }
-            
         });
 
         // Keep track of which player is performing for bonus points.
