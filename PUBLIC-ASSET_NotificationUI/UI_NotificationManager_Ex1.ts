@@ -1,7 +1,7 @@
 // Copyright (c) Dave Mills (RocketTrouble). Released under the MIT License.
 
 import { Asset, CodeBlockEvents, Component, Entity, Player, PropTypes } from "horizon/core";
-// import { NotificationEvent } from "UI_NotificationManager";
+import { NotificationEvent } from "UI_NotificationManager";
 import { simpleButtonEvent } from "UI_SimpleButtonEvent";
 
 class UI_NotificationManager_Ex1 extends Component<typeof UI_NotificationManager_Ex1> {
